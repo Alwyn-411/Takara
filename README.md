@@ -1,75 +1,38 @@
-# React + TypeScript + Vite
+# Takara
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An experimental finance management application for Personal Use and to Demystify Financial welbeing of the family
 
-Currently, two official plugins are available:
+## Scope
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+A general tracker for daily expense, tracking assets and liability, and analysing spending pattern for future welfare
 
-## React Compiler
+## Funtional Requirement
+- Visualize my daily expenses and liability
+- Analyse trends in expenses and assets
+- Plan for saving for the future
+- Update everyday at the end of the day
+- Multiple Users at home
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+## Non Functional Requirement
+- Easy of use
+- Runnable @ home
 
-Note: This will impact Vite dev & build performances.
+## Stack
 
-## Expanding the ESLint configuration
+#### Frontend
+- React - Already worked with react and its easy to get started
+- Typescript - I am not crazy enough to write vanilla js - 🤮
+- React complier - IDK why not (This is experimental anyway)
+- antd + antv - less styling more learning
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+#### Backend
+- Go - Already worked with Go and no need to over complicate this
+- Gin - Framework to reduce boiler plate
+- 
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+#### Database
+SQLite - simple, easy to use and stupid
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### References
+- [`Why Sqlite With Go` - oneuptime.com](https://oneuptime.com/blog/post/2026-02-02-sqlite-go/view#why-sqlite-with-go)
+- [`Quick Start`- Gin](https://gin-gonic.com/en/docs/quickstart/)
