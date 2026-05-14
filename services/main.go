@@ -1,36 +1,47 @@
 package main
 
 import (
-	"database/sql"
 	"takara/services/router"
+	"takara/services/schema"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 
 	_ "modernc.org/sqlite"
 )
 
-var db *sql.DB
+var db *sqlx.DB
 
-func initDatabase() error {
+func initDatabase() (*sqlx.DB, error) {
 	var err error
-	db, err = sql.Open("sqlite", "takara.db")
+	db, err = sqlx.Connect("sqlite", "takara.db")
 	if err != nil {
-		return err
+		return nil, err
 	}
-	
-	return nil
+
+	initTables(db)
+
+	return db, nil
 }
 
-func main()  {
+func initTables(db *sqlx.DB) {
+	// Enable Foreign Keys if not panic
+	schema.ForeignKeysEnabled(db)
+
+	// Set Up Users Table if not panic
+	schema.InitUsers(db)
+}
+
+func main() {
 	engine := gin.Default()
-	err := initDatabase()
+
+	db, err := initDatabase()
 	if err != nil {
 		return
 	}
-
 	defer db.Close()
 
-	router.RegisterRoutes(engine)
+	router.RegisterRoutes(engine, db)
 
 	engine.Run()
 }

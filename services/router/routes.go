@@ -1,22 +1,28 @@
 package router
 
 import (
-	"net/http"
+	"takara/services/handlers"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
 )
 
-func genericCrudRoutes(engine *gin.Engine) {
-	engine.POST("/:table/",)
-	engine.GET("/:table/:id",)
-	engine.PUT("/:table/:id",)
-	engine.DELETE("/:table/:id",)
-}
+func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
+	// User Routes
+	engine.POST("/v1/user/", func(ctx *gin.Context) { handlers.CreateUser(ctx, db) })
+	engine.GET("/v1/user/:id", func(ctx *gin.Context) { handlers.GetUserById(ctx, db) })
+	engine.PUT("/v1/user/:id", func(ctx *gin.Context) { handlers.UpdateUserById(ctx, db) })
+	engine.DELETE("/v1/user/:id", func(ctx *gin.Context) { handlers.DeleteUserById(ctx, db) })
 
-func RegisterRoutes(engine *gin.Engine) {
-	engine.GET("/ping", func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, gin.H{"message": "pong"})
-	})
+	// Account Routes
+	engine.POST("/v1/account/:userid")
+	engine.GET("/v1/account/:account_id")
+	engine.PUT("/v1/account/:account_id")
+	engine.DELETE("/v1/account/:account_id")
 
-	genericCrudRoutes(engine)
+	// Trasactions Routes
+	engine.POST("/v1/transactions/:account_id")
+	engine.GET("/v1/transactions/:transaction_id")
+	engine.PUT("/v1/transactions/:transaction_id")
+	engine.DELETE("/v1/transactions/:transaction_id")
 }
