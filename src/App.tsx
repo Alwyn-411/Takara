@@ -10,10 +10,12 @@ const theme: ThemeConfig = {
     "fontSize": 14,
     "colorLink": "#40a2e3",
     "colorError": "#ed0a28",
-    "colorWarning": "#fa541c"
+    "colorWarning": "#fa541c",
+    "colorTextBase": "#3e3d40",
+    "colorPrimary": "#257bf2",
+    "colorInfo": "#257bf2"
   }
 }
-
 
 function App() {
   return (

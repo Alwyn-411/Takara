@@ -59,7 +59,9 @@ SQLite - simple and easy to use
     }
     ```
     - This is absolutely horrible because we have to modify this array when ever i add a new field and it becomes unmanageable quickly
-    - Started learning about go generics 
+    - Started learning about go generics
+    - Decided to write CRUD for tables because there might just be three tables
+    
 
 ### References
 - [`Why Sqlite With Go` - oneuptime.com](https://oneuptime.com/blog/post/2026-02-02-sqlite-go/view#why-sqlite-with-go)
@@ -67,4 +69,4 @@ SQLite - simple and easy to use
 - [`Go Database SQL Guide` - go-database-sql.org](http://go-database-sql.org/)
 - [`Guide to SQLX` - jmoiron.github.io/sqlx/](https://jmoiron.github.io/sqlx/)
 - [`SQL Injection` - go.dev](https://go.dev/doc/database/sql-injection)
-- [`Mastering Go Generics`](https://medium.com/hprog99/mastering-generics-in-go-a-comprehensive-guide-4d05ec4b12b)
+- [`Mastering Go Generics`- medium.com](https://medium.com/hprog99/mastering-generics-in-go-a-comprehensive-guide-4d05ec4b12b)
