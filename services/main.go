@@ -28,8 +28,10 @@ func initTables(db *sqlx.DB) {
 	// Enable Foreign Keys if not panic
 	schema.ForeignKeysEnabled(db)
 
-	// Set Up Users Table if not panic
+	// Set Up Tables if not panic
 	schema.InitUsers(db)
+	schema.InitAccounts(db)
+
 }
 
 func main() {
