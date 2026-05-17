@@ -1,6 +1,7 @@
 package router
 
 import (
+	"net/http"
 	"takara/services/handlers"
 
 	"github.com/gin-gonic/gin"
@@ -9,6 +10,9 @@ import (
 
 func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 	// v1 routes
+	// Ping
+	engine.GET("/ping", func(ctx *gin.Context) { ctx.JSON(http.StatusAccepted, gin.H{"message": "pong"}) })
+
 	// User Routes
 	engine.POST("/v1/user/", func(ctx *gin.Context) { handlers.CreateUser(ctx, db) })
 	engine.GET("/v1/user/:id", func(ctx *gin.Context) { handlers.GetUserById(ctx, db) })

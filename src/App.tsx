@@ -1,30 +1,52 @@
-import { ConfigProvider, type ThemeConfig } from "antd";
+import { ConfigProvider, theme } from "antd";
+import type { ThemeConfig } from "antd";
 import { BrowserRouter } from "react-router-dom";
 import { Router } from "./router/Router";
 
-const theme: ThemeConfig = {
+const appTheme: ThemeConfig = {
+  algorithm: theme.defaultAlgorithm,
+
   token: {
-    "colorBgBase": "#fbfbfb",
-    "colorSuccess": "#52c41a",
-    "borderRadius": 8,
-    "fontSize": 14,
-    "colorLink": "#40a2e3",
-    "colorError": "#ed0a28",
-    "colorWarning": "#fa541c",
-    "colorTextBase": "#3e3d40",
-    "colorPrimary": "#257bf2",
-    "colorInfo": "#257bf2"
-  }
-}
+    colorPrimary: "#1677ff",
+
+    borderRadius: 10,
+
+    colorBgLayout: "#f5f7fa",
+    colorBgContainer: "#ffffff",
+
+    colorText: "#262626",
+    colorTextSecondary: "#595959",
+
+    fontSize: 14,
+    fontFamily: "Inter, system-ui, sans-serif",
+  },
+
+  components: {
+    Layout: {
+      headerBg: "#ffffff",
+      siderBg: "#ffffff",
+      bodyBg: "#f5f7fa",
+    },
+
+    Menu: {
+      itemBorderRadius: 8,
+      itemHeight: 42,
+    },
+
+    Card: {
+      borderRadiusLG: 14,
+    },
+  },
+};
 
 function App() {
   return (
-    <ConfigProvider theme={theme}>
+    <ConfigProvider theme={appTheme}>
       <BrowserRouter>
         <Router />
       </BrowserRouter>
     </ConfigProvider>
-  )
+  );
 }
 
 export default App;

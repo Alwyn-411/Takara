@@ -1,6 +1,7 @@
 package main
 
 import (
+	"takara/services/middleware"
 	"takara/services/router"
 	"takara/services/schema"
 
@@ -36,6 +37,7 @@ func initTables(db *sqlx.DB) {
 
 func main() {
 	engine := gin.Default()
+	engine.Use(middleware.CreateCorsMiddleware())
 
 	db, err := initDatabase()
 	if err != nil {
