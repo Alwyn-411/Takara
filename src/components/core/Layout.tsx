@@ -8,14 +8,19 @@ import { Button, Flex, Layout, Menu, Typography, theme } from "antd";
 import type { ItemType, MenuItemType } from "antd/es/menu/interface";
 import { useState } from "react";
 import { FaArrowTrendUp } from "react-icons/fa6";
-import { Outlet } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
+import { useUserStore } from "../../store/User";
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 export const ContentLayout = () => {
-  const [collapsed, setCollapsed] = useState(false);
+  const userId = useUserStore((state) => state.userId);
+  if (!userId) {
+    return <Navigate to="/" replace />;
+  }
 
+  const [collapsed, setCollapsed] = useState(false);
   const items: ItemType<MenuItemType>[] = [
     {
       key: "1",

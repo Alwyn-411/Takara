@@ -24,7 +24,7 @@ func InitUsers(dbInstance *sqlx.DB) {
 
 		userName TEXT NOT NULL UNIQUE,
 		password TEXT NOT NULL,
-		email TEXT UNIQUE,
+		email TEXT,
 		altName TEXT,
 		altEmail TEXT,
 

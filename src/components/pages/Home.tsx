@@ -1,11 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
 import { Typography } from "antd";
-import { ping } from "../../hooks/client";
+import { useUserStore } from "../../store/User";
 
 export const Home = () => {
-  const { data, isLoading } = useQuery({ queryKey: ["ping"], queryFn: ping });
+  const userName = useUserStore.getState().userName;
 
-  if (isLoading) return <div>Loading...</div>;
-
-  return <Typography.Text>{data.message}</Typography.Text>;
+  return <Typography.Text>{userName}</Typography.Text>;
 };

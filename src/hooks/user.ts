@@ -1,3 +1,4 @@
+import type { User } from "../types/User";
 import { axiosInstance } from "./client";
 
 export interface CreateUserRequest {
@@ -21,5 +22,10 @@ export const createUser = async (
     user,
   );
 
+  return response.data;
+};
+
+export const getUser = async (userId: string): Promise<User> => {
+  const response = await axiosInstance.get<User>(`/v1/user/${userId}`);
   return response.data;
 };

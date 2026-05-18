@@ -18,6 +18,8 @@ import { FcGoogle } from "react-icons/fc";
 import { GrGithub } from "react-icons/gr";
 import { useNavigate } from "react-router-dom";
 import { AuthUser } from "../../hooks/auth";
+import { getUser } from "../../hooks/user";
+import { useUserStore } from "../../store/User";
 
 const { Title, Text, Link } = Typography;
 
@@ -30,9 +32,26 @@ type FormFields = {
 export const Login = () => {
   const navigate = useNavigate();
 
+  const fetchUserMutation = useMutation({
+    mutationFn: getUser,
+    onSuccess: (data) => {
+      useUserStore.getState().updateUser({
+        userId: data.userId,
+        userName: data.userName,
+        altName: data.altName,
+        email: data.email,
+        altEmail: data.altEmail,
+      });
+    },
+    onError: (error) => {
+      console.error("Failed to Fetch user:", error);
+    },
+  });
+
   const loginMutation = useMutation({
     mutationFn: AuthUser,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      fetchUserMutation.mutate(data.id);
       navigate("/home");
     },
     onError: (error) => {

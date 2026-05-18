@@ -12,7 +12,6 @@ export interface PingResponse {
 }
 
 export const ping = async () => {
-  console.log("PING CALLED");
   const response = await axiosInstance.get<PingResponse>("/ping");
   return response.data;
 };
