@@ -1,3 +1,4 @@
+import { useMutation } from "@tanstack/react-query";
 import {
   Button,
   Card,
@@ -11,24 +12,48 @@ import {
   Row,
   Space,
   Typography,
+  type FormProps,
 } from "antd";
 import { FcGoogle } from "react-icons/fc";
 import { GrGithub } from "react-icons/gr";
 import { useNavigate } from "react-router-dom";
+import { AuthUser } from "../../hooks/auth";
 
 const { Title, Text, Link } = Typography;
 
 type FormFields = {
-  username?: string;
-  password?: string;
-  remember?: boolean;
+  username: string;
+  password: string;
+  remember: boolean;
 };
 
 export const Login = () => {
   const navigate = useNavigate();
-  const onLogin = async () => {
-    navigate("/home");
+
+  const loginMutation = useMutation({
+    mutationFn: AuthUser,
+    onSuccess: () => {
+      navigate("/home");
+    },
+    onError: (error) => {
+      console.error("Login failed:", error);
+    },
+  });
+
+  const onFinish: FormProps<FormFields>["onFinish"] = (values) => {
+    loginMutation.mutate({
+      userName: values.username!,
+      password: values.password!,
+      remember: values.remember,
+    });
   };
+
+  const onFinishFailed: FormProps<FormFields>["onFinishFailed"] = (
+    errorInfo,
+  ) => {
+    console.log("Failed:", errorInfo);
+  };
+
   return (
     <Row justify="center" align="middle">
       <Col span={20}>
@@ -52,6 +77,8 @@ export const Login = () => {
                   layout="vertical"
                   initialValues={{ remember: true }}
                   size="large"
+                  onFinish={onFinish}
+                  onFinishFailed={onFinishFailed}
                 >
                   <Form.Item<FormFields>
                     label="Username"
@@ -98,12 +125,7 @@ export const Login = () => {
                   </Row>
 
                   <Row justify="center" style={{ paddingBottom: 12 }}>
-                    <Button
-                      type="primary"
-                      htmlType="submit"
-                      size="large"
-                      onClick={onLogin}
-                    >
+                    <Button type="primary" htmlType="submit" size="large">
                       Login in
                     </Button>
                   </Row>

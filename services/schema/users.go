@@ -4,29 +4,32 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+
 type User struct {
 	Base
-	Username string `db:"username" json:"userName"`
-	AltName  string `db:"alt_name" json:"altName,omitempty"`
+	Username string `db:"userName" json:"userName"`
+	AltName  string `db:"altName" json:"altName,omitempty"`
 	Email    string `db:"email" json:"email"`
-	AltEmail string `db:"alt_email" json:"altEmail,omitempty"`
+	AltEmail string `db:"altEmail" json:"altEmail,omitempty"`
 
-	PasswordHash string `db:"password_hash" json:"-"`
+	Password string `db:"password" json:"password"`
 	Timestamp
 }
 
 func InitUsers(dbInstance *sqlx.DB) {
 	create := `
 		CREATE TABLE IF NOT EXISTS users (
-		user_id TEXT PRIMARY KEY NOT NULL,
+		userId TEXT PRIMARY KEY NOT NULL,
 		active INTEGER DEFAULT 1,
 
-		username TEXT NOT NULL,
-		email TEXT NOT NULL UNIQUE,
-		password_hash TEXT NOT NULL,
+		userName TEXT NOT NULL UNIQUE,
+		password TEXT NOT NULL,
+		email TEXT UNIQUE,
+		altName TEXT,
+		altEmail TEXT,
 
-		created_at INTEGER DEFAULT (strftime('%s','now')),
-		updated_at INTEGER DEFAULT (strftime('%s','now'))
+		createdAt INTEGER DEFAULT (strftime('%s','now')),
+		updatedAt INTEGER DEFAULT (strftime('%s','now'))
 		)
 	`
 

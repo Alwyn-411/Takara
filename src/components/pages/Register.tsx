@@ -1,5 +1,6 @@
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import {
+  Alert,
   Button,
   Card,
   Col,
@@ -11,25 +12,49 @@ import {
   Row,
   Space,
   Typography,
+  type FormProps,
 } from "antd";
 import { FcGoogle } from "react-icons/fc";
 import { GrGithub } from "react-icons/gr";
 import { useNavigate } from "react-router-dom";
+import {
+  createUser,
+  type CreateUserRequest,
+  type CreateUserResponse,
+} from "../../hooks/user";
+import { useMutation } from "@tanstack/react-query";
 
 const { Title, Text } = Typography;
 
 type FormFields = {
-  username?: string;
-  password?: string;
-  confirmPassword?: string;
-  remember?: boolean;
+  username: string;
+  password: string;
+  confirmPassword: string;
 };
 
 export const Register = () => {
   const navigate = useNavigate();
-  const onLogin = async () => {
-    navigate("/home");
+
+  const { mutate, isPending, isError } = useMutation<
+    CreateUserResponse,
+    Error,
+    CreateUserRequest
+  >({
+    mutationFn: createUser,
+    onSuccess: () => {
+      navigate("/home");
+    },
+  });
+
+  const onFinish: FormProps<FormFields>["onFinish"] = (values) => {
+    const userData: CreateUserRequest = {
+      userName: values.username,
+      password: values.password,
+    };
+
+    mutate(userData);
   };
+
   return (
     <Row justify="center" align="middle">
       <Col span={20}>
@@ -38,11 +63,12 @@ export const Register = () => {
             <Col span={12}>
               <Image
                 src="/signup.svg"
-                alt="login"
+                alt="signup"
                 preview={false}
                 width="100%"
               />
             </Col>
+
             <Col span={12}>
               <Space
                 orientation="vertical"
@@ -53,62 +79,70 @@ export const Register = () => {
                   <Title level={2} style={{ margin: 0 }}>
                     Takara
                   </Title>
-
                   <Text type="secondary">Your Personal Finance Dashboard</Text>
                 </Flex>
 
                 <Space align="center">
                   <Button icon={<ArrowLeftOutlined />} type="text" href="/" />
-                  <Text strong italic style={{ fontSize: 20 }}>
-                    Sign up
+                  <Text italic style={{ fontSize: 20 }}>
+                    Sign Up
                   </Text>
                 </Space>
 
+                {isError && (
+                  <Alert
+                    description="User name already exists"
+                    type="error"
+                    showIcon
+                  />
+                )}
+
                 <Form<FormFields>
                   layout="vertical"
-                  initialValues={{ remember: true }}
                   size="large"
+                  onFinish={onFinish}
                 >
-                  <Form.Item<FormFields>
+                  <Form.Item
                     label="Username"
                     name="username"
-                    required={false}
                     rules={[
-                      {
-                        required: true,
-                        message: "Enter a username",
-                      },
+                      { required: true, message: "Enter a username" },
+                      { min: 3, message: "Minimum 3 characters" },
                     ]}
                   >
                     <Input placeholder="Enter username" />
                   </Form.Item>
 
-                  <Form.Item<FormFields>
+                  <Form.Item
                     label="Password"
                     name="password"
-                    required={false}
                     rules={[
-                      {
-                        required: true,
-                        message: "Enter your new password",
-                      },
+                      { required: true, message: "Enter your password" },
+                      { min: 6, message: "Minimum 6 characters" },
                     ]}
                   >
-                    <Input.Password placeholder="Enter new password" />
+                    <Input.Password placeholder="Enter password" />
                   </Form.Item>
 
-                  <Form.Item<FormFields>
+                  <Form.Item
                     label="Confirm Password"
                     name="confirmPassword"
-                    required={false}
+                    dependencies={["password"]}
                     rules={[
-                      {
-                        required: true,
-                        message: "Enter your new password again",
-                      },
+                      { required: true, message: "Confirm your password" },
+                      ({ getFieldValue }) => ({
+                        validator(_, value) {
+                          if (!value || getFieldValue("password") === value) {
+                            return Promise.resolve();
+                          }
+                          return Promise.reject(
+                            new Error("Passwords do not match"),
+                          );
+                        },
+                      }),
                     ]}
                   >
-                    <Input.Password placeholder="Enter new password again" />
+                    <Input.Password placeholder="Confirm password" />
                   </Form.Item>
 
                   <Row justify="center" style={{ paddingBottom: 12 }}>
@@ -116,7 +150,7 @@ export const Register = () => {
                       type="primary"
                       htmlType="submit"
                       size="large"
-                      onClick={onLogin}
+                      loading={isPending}
                     >
                       Sign Up
                     </Button>

@@ -10,8 +10,8 @@ import (
 
 func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 	// v1 routes
-	// Ping
 	engine.GET("/ping", func(ctx *gin.Context) { ctx.JSON(http.StatusAccepted, gin.H{"message": "pong"}) })
+	engine.GET("/v1/auth", func(ctx *gin.Context) {handlers.AuthorizeUserWithUserNameAndPassword(ctx, db)})
 
 	// User Routes
 	engine.POST("/v1/user/", func(ctx *gin.Context) { handlers.CreateUser(ctx, db) })
