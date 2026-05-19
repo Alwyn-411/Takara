@@ -6,11 +6,11 @@ import (
 
 type Account struct {
 	Base
-	AccountID string `db:"account_id" json:"accountId"`
+	AccountID string `db:"accountId" json:"accountId"`
 
 	Type          string `db:"type" json:"type,omitempty"`
 	Name          string `db:"name" json:"name"`
-	AccountNumber string `db:"account_number" json:"account_number"`
+	AccountNumber string `db:"accountNumber" json:"accountNumber"`
 	Description   string `db:"description" json:"description,omitempty"`
 	Currency      string `db:"currency" json:"currency"`
 
@@ -23,23 +23,23 @@ type Account struct {
 func InitAccounts(dbInstance *sqlx.DB) {
 	command := `
 		CREATE TABLE IF NOT EXISTS accounts (
-		user_id TEXT NOT NULL,
+		userId TEXT NOT NULL,
 		active INTEGER DEFAULT 1,
 
-		account_id TEXT PRIMARY KEY NOT NULL,
+		accountId TEXT PRIMARY KEY NOT NULL,
 		type TEXT NOT NULL,
 		name TEXT NOT NULL,
-		account_number TEXT NOT NULL,
+		accountNumber TEXT NOT NULL,
 		description TEXT,
 		currency TEXT NOT NULL,
 
 		interest REAL DEFAULT 0,
 		balance REAL DEFAULT 0,
 
-		created_at INTEGER DEFAULT (strftime('%s','now')),
-		updated_at INTEGER DEFAULT (strftime('%s','now')),
+		createdAt INTEGER DEFAULT (strftime('%s','now')),
+		updatedAt INTEGER DEFAULT (strftime('%s','now')),
 
-		FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+		FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
 	);`
 
 	dbInstance.MustExec(command)

@@ -70,3 +70,4 @@ SQLite - simple and easy to use
 - [`Guide to SQLX` - jmoiron.github.io/sqlx/](https://jmoiron.github.io/sqlx/)
 - [`SQL Injection` - go.dev](https://go.dev/doc/database/sql-injection)
 - [`Mastering Go Generics`- medium.com](https://medium.com/hprog99/mastering-generics-in-go-a-comprehensive-guide-4d05ec4b12b)
+- [`Are breadcrumbs still fresh for ux` - medium.com](https://medium.com/madison-ave-collective/are-breadcrumbs-still-fresh-for-ux-6e72b0f96e9b)

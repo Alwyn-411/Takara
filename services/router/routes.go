@@ -11,7 +11,7 @@ import (
 func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 	// v1 routes
 	engine.GET("/ping", func(ctx *gin.Context) { ctx.JSON(http.StatusAccepted, gin.H{"message": "pong"}) })
-	engine.GET("/v1/auth", func(ctx *gin.Context) {handlers.AuthorizeUserWithUserNameAndPassword(ctx, db)})
+	engine.GET("/v1/auth", func(ctx *gin.Context) { handlers.AuthorizeUserWithUserNameAndPassword(ctx, db) })
 
 	// User Routes
 	engine.POST("/v1/user/", func(ctx *gin.Context) { handlers.CreateUser(ctx, db) })
@@ -22,6 +22,7 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 	// Account Routes
 	engine.POST("/v1/account/", func(ctx *gin.Context) { handlers.CreateAccount(ctx, db) })
 	engine.GET("/v1/account/:accountId", func(ctx *gin.Context) { handlers.GetAccountById(ctx, db) })
+	engine.GET("/v1/account/user/:userId", func(ctx *gin.Context) { handlers.GetAccountsByUserId(ctx, db) })
 	engine.PUT("/v1/account/:accountId", func(ctx *gin.Context) { handlers.UpdateAccountById(ctx, db) })
 	engine.DELETE("/v1/account/:accountId", func(ctx *gin.Context) { handlers.DeleteAccountById(ctx, db) })
 

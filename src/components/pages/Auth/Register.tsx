@@ -21,7 +21,7 @@ import {
   createUser,
   type CreateUserRequest,
   type CreateUserResponse,
-} from "../../hooks/user";
+} from "../../../hooks/user";
 import { useMutation } from "@tanstack/react-query";
 import Link from "antd/es/typography/Link";
 

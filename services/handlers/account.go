@@ -17,9 +17,9 @@ func GetAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	id := ctx.Param("accountId")
 
 	query := `
-		SELECT user_id, account_id, type, name, account_number, description, currency, interest, balance, active
+		SELECT userId, accountId, type, name, accountNumber, description, currency, interest, balance, active
 		FROM accounts
-		WHERE account_id = ? AND active = ?
+		WHERE accountId = ? AND active = ?
 	`
 
 	var account schema.Account
@@ -52,9 +52,9 @@ func CreateAccount(ctx *gin.Context, dbInstance *sqlx.DB) {
 
 	query := `INSERT 
 	INTO accounts (
-		user_id, account_id, type, name, account_number, description, currency, interest, balance, active
+		userId, accountId, type, name, accountNumber, description, currency, interest, balance, active
 	) VALUES (
-		:user_id, :account_id, :type, :name, :account_number, :description, :currency, :interest, :balance, :active
+		:userId, :accountId, :type, :name, :accountNumber, :description, :currency, :interest, :balance, :active
 	 )`
 
 	_, err = dbInstance.NamedExec(query, data)
@@ -81,14 +81,14 @@ func UpdateAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	args := []any{}
 
 	allowedFields := map[string]bool{
-		"type":           true,
-		"name":           true,
-		"active":         true,
-		"balance":        true,
-		"currency":       true,
-		"interest":       true,
-		"description":    true,
-		"account_number": true,
+		"type":          true,
+		"name":          true,
+		"active":        true,
+		"balance":       true,
+		"currency":      true,
+		"interest":      true,
+		"description":   true,
+		"accountNumber": true,
 	}
 
 	for key, value := range data {
@@ -104,7 +104,7 @@ func UpdateAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 
 	args = append(args, accountId)
 
-	query := fmt.Sprintf(`UPDATE accounts SET %s WHERE account_id = ?`, strings.Join(set, ", "))
+	query := fmt.Sprintf(`UPDATE accounts SET %s WHERE accountId = ?`, strings.Join(set, ", "))
 
 	result, err := dbInstance.Exec(query, args...)
 	if err != nil {
@@ -119,7 +119,7 @@ func UpdateAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	}
 
 	if rows == 0 {
-		ctx.AbortWithError(http.StatusNotFound, fmt.Errorf("Account with account_id = %s does not Exist", accountId))
+		ctx.AbortWithError(http.StatusNotFound, fmt.Errorf("Account with accountId = %s does not Exist", accountId))
 		return
 	}
 
@@ -130,13 +130,39 @@ func DeleteAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	accountId := ctx.Param("accountId")
 
 	query := `
-		UPDATE accounts SET active = :active WHERE account_id = :id
+		UPDATE accounts SET active = :active WHERE accountId = :id
 	`
-	_, err := dbInstance.NamedExec(query, gin.H{"account_id": accountId, "active": false})
+	_, err := dbInstance.NamedExec(query, gin.H{"accountId": accountId, "active": false})
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+}
+
+func GetAccountsByUserId(ctx *gin.Context, dbInstance *sqlx.DB) {
+	id := ctx.Param("userId")
+
+	query := `
+		SELECT userId, accountId, type, name, accountNumber, description, currency, interest, balance, active
+		FROM accounts
+		WHERE userId = ? AND active = ? 
+		LIMIT 15
+	`
+
+	var account []schema.Account
+	err := dbInstance.Select(&account, query, id, true)
+
+	if err == sql.ErrNoRows {
+		ctx.AbortWithError(http.StatusNotFound, sql.ErrNoRows)
+		return
+	}
+
+	if err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, account)
 }

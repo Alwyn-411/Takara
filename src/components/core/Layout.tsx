@@ -1,4 +1,5 @@
 import {
+  AccountBookOutlined,
   CaretLeftOutlined,
   CaretRightOutlined,
   HomeOutlined,
@@ -17,18 +18,28 @@ const { Title } = Typography;
 
 export const ContentLayout = () => {
   const userId = useUserStore((state) => state.userId);
+  const navigate = useNavigate();
+  const {
+    token: { colorBorderSecondary, colorPrimary },
+  } = theme.useToken();
+
   if (!userId) {
     return <Navigate to="/" replace />;
   }
   const [collapsed, setCollapsed] = useState(false);
-  const navigate = useNavigate();
-
   const SidebarItems: ItemType<MenuItemType>[] = [
     {
       key: "1",
       icon: <HomeOutlined />,
       label: "Home",
+      onClick: () => { navigate("/home") }
     },
+    {
+      key: "2",
+      icon: <AccountBookOutlined />,
+      label: "Accounts",
+      onClick: () => { navigate("/accounts") }
+    }
   ];
 
   const ProfileItems: MenuProps['items'] = [
@@ -81,10 +92,6 @@ export const ContentLayout = () => {
     }
   }
 
-  const {
-    token: { colorBorderSecondary, colorPrimary },
-  } = theme.useToken();
-
   return (
     <Layout style={{ minHeight: "100vh" }}>
       <Sider
@@ -120,7 +127,6 @@ export const ContentLayout = () => {
 
         <Menu
           mode="inline"
-          defaultSelectedKeys={["1"]}
           items={SidebarItems}
           style={{
             borderInlineEnd: 0,

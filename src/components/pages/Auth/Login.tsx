@@ -18,9 +18,9 @@ import {
 import { FcGoogle } from "react-icons/fc";
 import { GrGithub } from "react-icons/gr";
 import { useNavigate } from "react-router-dom";
-import { AuthUser } from "../../hooks/auth";
-import { getUser } from "../../hooks/user";
-import { useUserStore } from "../../store/User";
+import { AuthUser } from "../../../hooks/auth";
+import { getUser } from "../../../hooks/user";
+import { useUserStore } from "../../../store/User";
 
 const { Title, Text, Link } = Typography;
 
