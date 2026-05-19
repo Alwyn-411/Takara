@@ -9,6 +9,7 @@ import {
   Form,
   Image,
   Input,
+  message,
   Row,
   Space,
   Typography,
@@ -32,40 +33,36 @@ type FormFields = {
 export const Login = () => {
   const navigate = useNavigate();
 
-  const fetchUserMutation = useMutation({
-    mutationFn: getUser,
-    onSuccess: (data) => {
-      useUserStore.getState().updateUser({
-        userId: data.userId,
-        userName: data.userName,
-        altName: data.altName,
-        email: data.email,
-        altEmail: data.altEmail,
-      });
+  const updateUser = useUserStore((s) => s.updateUser);
+  const { mutate } = useMutation({
+    mutationFn: async (values: FormFields) => {
+      const auth = await AuthUser({
+        userName: values.username,
+        password: values.password,
+        remember: values.remember
+      })
+      const user = await getUser(auth.id)
+      return user
+    },
+    onSuccess: (user) => {
+      updateUser({
+        userId: user.userId,
+        userName: user.userName,
+        altName: user.altName,
+        email: user.email,
+        altEmail: user.altEmail
+      })
+      navigate("/home")
     },
     onError: (error) => {
-      console.error("Failed to Fetch user:", error);
-    },
-  });
-
-  const loginMutation = useMutation({
-    mutationFn: AuthUser,
-    onSuccess: (data) => {
-      fetchUserMutation.mutate(data.id);
-      navigate("/home");
-    },
-    onError: (error) => {
-      console.error("Login failed:", error);
-    },
-  });
+      console.error(error)
+      message.error("Invalid Credentials")
+    }
+  })
 
   const onFinish: FormProps<FormFields>["onFinish"] = (values) => {
-    loginMutation.mutate({
-      userName: values.username!,
-      password: values.password!,
-      remember: values.remember,
-    });
-  };
+    mutate(values)
+  }
 
   const onFinishFailed: FormProps<FormFields>["onFinishFailed"] = (
     errorInfo,
@@ -91,6 +88,12 @@ export const Login = () => {
 
                   <Text type="secondary">Your Personal Finance Dashboard</Text>
                 </Flex>
+
+                <Row justify="center">
+                  <Text italic style={{ fontSize: 20 }}>
+                    Login In
+                  </Text>
+                </Row>
 
                 <Form<FormFields>
                   layout="vertical"
@@ -149,8 +152,11 @@ export const Login = () => {
                     </Button>
                   </Row>
 
-                  <Divider>
-                    <Text type="secondary">Or Login With</Text>
+                  {/*
+                    TODO: Add SSO                  
+                  */}
+                  {/* <Divider>
+                    <Text type="secondary">Or Log in With</Text>
                   </Divider>
 
                   <Row
@@ -160,7 +166,7 @@ export const Login = () => {
                   >
                     <Button icon={<FcGoogle />}>Google</Button>
                     <Button icon={<GrGithub />}>Github</Button>
-                  </Row>
+                  </Row> */}
 
                   <Row justify="center">
                     <Space size="small">

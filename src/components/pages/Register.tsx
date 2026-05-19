@@ -23,6 +23,7 @@ import {
   type CreateUserResponse,
 } from "../../hooks/user";
 import { useMutation } from "@tanstack/react-query";
+import Link from "antd/es/typography/Link";
 
 const { Title, Text } = Typography;
 
@@ -30,26 +31,28 @@ type FormFields = {
   username: string;
   password: string;
   confirmPassword: string;
+  altName: string;
+  email: string;
+  altEmail: string
 };
 
 export const Register = () => {
-  const navigate = useNavigate();
-
-  const { mutate, isPending, isError } = useMutation<
+  const { mutate, isPending, isError, isSuccess } = useMutation<
     CreateUserResponse,
     Error,
     CreateUserRequest
   >({
-    mutationFn: createUser,
-    onSuccess: () => {
-      navigate("/home");
-    },
+    mutationFn: createUser
   });
 
   const onFinish: FormProps<FormFields>["onFinish"] = (values) => {
     const userData: CreateUserRequest = {
       userName: values.username,
+      altEmail: values.altEmail,
+      email: values.email,
+      altName: values.altName,
       password: values.password,
+
     };
 
     mutate(userData);
@@ -61,6 +64,14 @@ export const Register = () => {
         <Card variant="borderless" style={{ padding: 16 }}>
           <Row gutter={[48, 32]} align="middle">
             <Col span={12}>
+              <Flex vertical align="center" gap={0} style={{ padding: 16 }}>
+                <Title level={2} style={{ margin: 0 }}>
+                  Takara
+                </Title>
+                <Text type="secondary">Your Personal Finance Dashboard</Text>
+              </Flex>
+
+
               <Image
                 src="/signup.svg"
                 alt="signup"
@@ -75,13 +86,6 @@ export const Register = () => {
                 size="middle"
                 style={{ width: "100%" }}
               >
-                <Flex vertical align="center" gap={0} style={{ padding: 16 }}>
-                  <Title level={2} style={{ margin: 0 }}>
-                    Takara
-                  </Title>
-                  <Text type="secondary">Your Personal Finance Dashboard</Text>
-                </Flex>
-
                 <Space align="center">
                   <Button icon={<ArrowLeftOutlined />} type="text" href="/" />
                   <Text italic style={{ fontSize: 20 }}>
@@ -97,14 +101,25 @@ export const Register = () => {
                   />
                 )}
 
+                {isSuccess && (
+                  <Alert
+                    title="User Created Successfully"
+                    description={<Text>Please Login with your credentials <Link href="/">here</Link></Text>}
+                    type="success"
+                    showIcon
+                  />
+                )}
+
                 <Form<FormFields>
                   layout="vertical"
                   size="large"
                   onFinish={onFinish}
+                  requiredMark="optional"
                 >
                   <Form.Item
                     label="Username"
                     name="username"
+                    required
                     rules={[
                       { required: true, message: "Enter a username" },
                       { min: 3, message: "Minimum 3 characters" },
@@ -114,8 +129,33 @@ export const Register = () => {
                   </Form.Item>
 
                   <Form.Item
+                    label="Nickname"
+                    name="altName"
+                    rules={[
+                      { min: 1, message: "Minimum 1 characters" },
+                    ]}
+                  >
+                    <Input placeholder="Enter Nickname" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Email"
+                    name="email"
+                  >
+                    <Input placeholder="Enter Email" />
+                  </Form.Item>
+
+                  <Form.Item
+                    label="Personal Email"
+                    name="altEmail"
+                  >
+                    <Input placeholder="Enter Personal Email" />
+                  </Form.Item>
+
+                  <Form.Item
                     label="Password"
                     name="password"
+                    required
                     rules={[
                       { required: true, message: "Enter your password" },
                       { min: 6, message: "Minimum 6 characters" },
@@ -127,6 +167,7 @@ export const Register = () => {
                   <Form.Item
                     label="Confirm Password"
                     name="confirmPassword"
+                    required
                     dependencies={["password"]}
                     rules={[
                       { required: true, message: "Confirm your password" },
@@ -156,7 +197,10 @@ export const Register = () => {
                     </Button>
                   </Row>
 
-                  <Divider>
+                  {/*
+                    TODO: Add SSO                  
+                  */}
+                  {/* <Divider>
                     <Text type="secondary">Or Sign Up With</Text>
                   </Divider>
 
@@ -167,7 +211,7 @@ export const Register = () => {
                   >
                     <Button icon={<FcGoogle />}>Google</Button>
                     <Button icon={<GrGithub />}>Github</Button>
-                  </Row>
+                  </Row> */}
                 </Form>
               </Space>
             </Col>

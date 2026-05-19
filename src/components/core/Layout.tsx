@@ -2,13 +2,14 @@ import {
   CaretLeftOutlined,
   CaretRightOutlined,
   HomeOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 
-import { Button, Flex, Layout, Menu, Typography, theme } from "antd";
+import { Avatar, Button, Dropdown, Flex, Layout, Menu, Typography, theme, type MenuProps } from "antd";
 import type { ItemType, MenuItemType } from "antd/es/menu/interface";
 import { useState } from "react";
 import { FaArrowTrendUp } from "react-icons/fa6";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useNavigate } from "react-router-dom";
 import { useUserStore } from "../../store/User";
 
 const { Header, Sider, Content } = Layout;
@@ -19,15 +20,66 @@ export const ContentLayout = () => {
   if (!userId) {
     return <Navigate to="/" replace />;
   }
-
   const [collapsed, setCollapsed] = useState(false);
-  const items: ItemType<MenuItemType>[] = [
+  const navigate = useNavigate();
+
+  const SidebarItems: ItemType<MenuItemType>[] = [
     {
       key: "1",
       icon: <HomeOutlined />,
       label: "Home",
     },
   ];
+
+  const ProfileItems: MenuProps['items'] = [
+    {
+      key: '1',
+      label: 'My Account',
+      disabled: true,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: '2',
+      label: 'Profile',
+      extra: '⌘P',
+    },
+    {
+      key: '3',
+      label: 'Settings',
+      extra: '⌘S',
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: '4',
+      label: 'Logout',
+      danger: true,
+      extra: '⌘L'
+    }
+  ];
+
+  const ProfileOnClick: MenuProps['onClick'] = (e) => {
+    switch (e.key) {
+      case '2':
+        console.log("clicked Profile");
+        break;
+      case '3':
+        console.log("clicked settings");
+        break;
+
+      case '4':
+        console.log("clicked Logout");
+        useUserStore.getState().clearUser()
+        navigate("/")
+        break;
+
+      default:
+        console.log("Unknown value");
+    }
+  }
 
   const {
     token: { colorBorderSecondary, colorPrimary },
@@ -69,21 +121,21 @@ export const ContentLayout = () => {
         <Menu
           mode="inline"
           defaultSelectedKeys={["1"]}
-          items={items}
+          items={SidebarItems}
           style={{
             borderInlineEnd: 0,
             paddingInline: 8,
           }}
         />
+
       </Sider>
 
       <Layout>
         <Header
           style={{
             display: "flex",
-            alignItems: "center",
-            paddingInline: 16,
-            borderBottom: `1px solid ${colorBorderSecondary}`,
+            padding: "16px",
+            justifyContent: "space-between",
           }}
         >
           <Button
@@ -91,6 +143,13 @@ export const ContentLayout = () => {
             icon={collapsed ? <CaretRightOutlined /> : <CaretLeftOutlined />}
             onClick={() => setCollapsed(!collapsed)}
           />
+
+          <Dropdown menu={{ items: ProfileItems, onClick: ProfileOnClick }}>
+            <Avatar
+              icon={<UserOutlined />}
+              style={{ cursor: "pointer", backgroundColor: colorPrimary }}
+            />
+          </Dropdown>
         </Header>
 
         <Content
