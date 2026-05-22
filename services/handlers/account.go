@@ -26,7 +26,7 @@ func GetAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	err := dbInstance.Get(&account, query, id, true)
 
 	if err == sql.ErrNoRows {
-		ctx.AbortWithError(http.StatusNotFound, sql.ErrNoRows)
+		ctx.AbortWithError(http.StatusNoContent, sql.ErrNoRows)
 		return
 	}
 
@@ -52,14 +52,14 @@ func CreateAccount(ctx *gin.Context, dbInstance *sqlx.DB) {
 
 	query := `INSERT 
 	INTO accounts (
-		userId, accountId, type, name, accountNumber, description, currency, interest, balance, active
+		userId, accountId, type, name, accountNumber, description, currency, interest, balance
 	) VALUES (
-		:userId, :accountId, :type, :name, :accountNumber, :description, :currency, :interest, :balance, :active
+		:userId, :accountId, :type, :name, :accountNumber, :description, :currency, :interest, :balance
 	 )`
 
 	_, err = dbInstance.NamedExec(query, data)
 	if err != nil {
-		ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "failed to create Account"})
+		ctx.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -99,7 +99,7 @@ func UpdateAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 		args = append(args, value)
 	}
 
-	set = append(set, "updatedTimeStamp = ?")
+	set = append(set, "updatedAt = ?")
 	args = append(args, time.Now())
 
 	args = append(args, accountId)
@@ -119,7 +119,7 @@ func UpdateAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	}
 
 	if rows == 0 {
-		ctx.AbortWithError(http.StatusNotFound, fmt.Errorf("Account with accountId = %s does not Exist", accountId))
+		ctx.AbortWithError(http.StatusNoContent, fmt.Errorf("Account with accountId = %s does not Exist", accountId))
 		return
 	}
 
@@ -130,7 +130,7 @@ func DeleteAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	accountId := ctx.Param("accountId")
 
 	query := `
-		UPDATE accounts SET active = :active WHERE accountId = :id
+		UPDATE accounts SET active = :active WHERE accountId = :accountId
 	`
 	_, err := dbInstance.NamedExec(query, gin.H{"accountId": accountId, "active": false})
 	if err != nil {
@@ -148,14 +148,14 @@ func GetAccountsByUserId(ctx *gin.Context, dbInstance *sqlx.DB) {
 		SELECT userId, accountId, type, name, accountNumber, description, currency, interest, balance, active
 		FROM accounts
 		WHERE userId = ? AND active = ? 
-		LIMIT 15
+		LIMIT 10
 	`
 
-	var account []schema.Account
-	err := dbInstance.Select(&account, query, id, true)
+	accounts := []schema.Account{}
+	err := dbInstance.Select(&accounts, query, id, true)
 
-	if err == sql.ErrNoRows {
-		ctx.AbortWithError(http.StatusNotFound, sql.ErrNoRows)
+	if len(accounts) == 0 {
+		ctx.AbortWithStatus(http.StatusNoContent)
 		return
 	}
 
@@ -164,5 +164,10 @@ func GetAccountsByUserId(ctx *gin.Context, dbInstance *sqlx.DB) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, account)
+	var response schema.ListResponse[schema.Account]
+
+	response.Count = len(accounts)
+	response.Records = accounts
+
+	ctx.JSON(http.StatusOK, response)
 }

@@ -4,7 +4,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-
 type User struct {
 	Base
 	Username string `db:"userName" json:"userName"`

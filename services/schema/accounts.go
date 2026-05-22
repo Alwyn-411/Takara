@@ -39,7 +39,7 @@ func InitAccounts(dbInstance *sqlx.DB) {
 		createdAt INTEGER DEFAULT (strftime('%s','now')),
 		updatedAt INTEGER DEFAULT (strftime('%s','now')),
 
-		FOREIGN KEY(userId) REFERENCES users(id) ON DELETE CASCADE
+		FOREIGN KEY(userId) REFERENCES users(userId) ON DELETE CASCADE
 	);`
 
 	dbInstance.MustExec(command)

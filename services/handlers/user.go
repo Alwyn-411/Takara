@@ -246,13 +246,13 @@ func AuthorizeUserWithUserNameAndPassword(ctx *gin.Context, dbInstance *sqlx.DB)
 	}
 
 	if err != nil {
-		ctx.AbortWithStatus(http.StatusInternalServerError)
+		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	err = CheckPassword(user.Password, enteredUserPassword)
 	if err != nil {
-		ctx.AbortWithStatus(http.StatusUnauthorized)
+		ctx.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
 

@@ -12,6 +12,11 @@ type Timestamp struct {
 	UpdatedAt int64 `db:"updatedAt" json:"updatedAt"`
 }
 
+type ListResponse[T any] struct {
+	Count   int `json:"count"`
+	Records []T `json:"records"`
+}
+
 func ForeignKeysEnabled(dbInstance *sqlx.DB) {
 	command := "PRAGMA foreign_keys = ON;"
 
