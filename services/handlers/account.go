@@ -4,16 +4,37 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"strings"
 	"takara/services/schema"
 	"time"
 
+	"github.com/bojanz/currency"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
-func GetAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
+type AccountHandler struct {
+	dbInstance *sqlx.DB
+}
+
+func NewAccountHandler(db *sqlx.DB) *AccountHandler {
+	return &AccountHandler{
+		dbInstance: db,
+	}
+}
+
+type UpdateAccountRequest struct {
+	Type          *string `json:"type"`
+	Name          *string `json:"name"`
+	Active        *int    `json:"active"`
+	Balance       *string `json:"balance"`
+	Currency      *string `json:"currency"`
+	Interest      *string `json:"interest"`
+	Description   *string `json:"description"`
+	AccountNumber *string `json:"accountNumber"`
+}
+
+func (handler *AccountHandler) GetAccountById(ctx *gin.Context) {
 	id := ctx.Param("accountId")
 
 	query := `
@@ -23,7 +44,7 @@ func GetAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	`
 
 	var account schema.Account
-	err := dbInstance.Get(&account, query, id, true)
+	err := handler.dbInstance.Get(&account, query, id, true)
 
 	if err == sql.ErrNoRows {
 		ctx.AbortWithError(http.StatusNoContent, sql.ErrNoRows)
@@ -38,7 +59,7 @@ func GetAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	ctx.JSON(http.StatusOK, account)
 }
 
-func CreateAccount(ctx *gin.Context, dbInstance *sqlx.DB) {
+func (handler *AccountHandler) CreateAccount(ctx *gin.Context) {
 	accountId := uuid.New().String()
 
 	var data schema.Account
@@ -49,6 +70,13 @@ func CreateAccount(ctx *gin.Context, dbInstance *sqlx.DB) {
 	}
 
 	data.AccountID = accountId
+	newBalance, err := currency.NewAmount(data.Balance, data.Currency)
+	if err != nil {
+		ctx.JSON(400, gin.H{"error": "invalid amount or currency"})
+		return
+	}
+
+	data.Balance = newBalance.Number()
 
 	query := `INSERT 
 	INTO accounts (
@@ -57,7 +85,7 @@ func CreateAccount(ctx *gin.Context, dbInstance *sqlx.DB) {
 		:userId, :accountId, :type, :name, :accountNumber, :description, :currency, :interest, :balance
 	 )`
 
-	_, err = dbInstance.NamedExec(query, data)
+	_, err = handler.dbInstance.NamedExec(query, data)
 	if err != nil {
 		ctx.AbortWithStatusJSON(http.StatusInternalServerError, err.Error())
 		return
@@ -66,73 +94,79 @@ func CreateAccount(ctx *gin.Context, dbInstance *sqlx.DB) {
 	ctx.JSON(http.StatusCreated, gin.H{"id": data.UserID})
 }
 
-func UpdateAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
+func (handler *AccountHandler) UpdateAccountById(ctx *gin.Context) {
 	accountId := ctx.Param("accountId")
 
-	var data map[string]any
+	var req UpdateAccountRequest
 
-	err := ctx.ShouldBindJSON(&data)
-	if err != nil {
-		ctx.AbortWithError(http.StatusBadRequest, err)
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.AbortWithStatus(http.StatusBadRequest)
 		return
 	}
 
-	set := []string{}
-	args := []any{}
-
-	allowedFields := map[string]bool{
-		"type":          true,
-		"name":          true,
-		"active":        true,
-		"balance":       true,
-		"currency":      true,
-		"interest":      true,
-		"description":   true,
-		"accountNumber": true,
-	}
-
-	for key, value := range data {
-		if !allowedFields[key] {
-			continue
+	if req.Balance != nil && req.Currency != nil {
+		newBalance, err := currency.NewAmount(*req.Balance, *req.Currency)
+		if err != nil {
+			ctx.AbortWithError(400, err)
+			return
 		}
-		set = append(set, fmt.Sprintf("%s = ?", key))
-		args = append(args, value)
+
+		b := newBalance.Number()
+		req.Balance = &b
 	}
 
-	set = append(set, "updatedAt = ?")
-	args = append(args, time.Now())
+	query := `
+		UPDATE accounts
+		SET type = COALESCE(:type, type),
+			name = COALESCE(:name, name),
+			active = COALESCE(:active, active),
+			balance = COALESCE(:balance, balance),
+			currency = COALESCE(:currency, currency),
+			interest = COALESCE(:interest, interest),
+			description = COALESCE(:description, description),
+			accountNumber = COALESCE(:accountNumber, accountNumber),
+			updatedAt = :updatedAt
+		WHERE accountId = :accountId
+	`
 
-	args = append(args, accountId)
+	params := gin.H{
+		"accountId":     accountId,
+		"updatedAt":     time.Now().Unix(),
+		"type":          req.Type,
+		"name":          req.Name,
+		"active":        req.Active,
+		"balance":       req.Balance,
+		"currency":      req.Currency,
+		"interest":      req.Interest,
+		"description":   req.Description,
+		"accountNumber": req.AccountNumber,
+	}
 
-	query := fmt.Sprintf(`UPDATE accounts SET %s WHERE accountId = ?`, strings.Join(set, ", "))
-
-	result, err := dbInstance.Exec(query, args...)
+	result, err := handler.dbInstance.NamedExec(query, params)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	rows, err := result.RowsAffected()
-	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
+	rows, _ := result.RowsAffected()
 
 	if rows == 0 {
 		ctx.AbortWithError(http.StatusNoContent, fmt.Errorf("Account with accountId = %s does not Exist", accountId))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "success",
+	})
 }
 
-func DeleteAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
+func (handler *AccountHandler) DeleteAccountById(ctx *gin.Context) {
 	accountId := ctx.Param("accountId")
 
 	query := `
 		UPDATE accounts SET active = :active WHERE accountId = :accountId
 	`
-	_, err := dbInstance.NamedExec(query, gin.H{"accountId": accountId, "active": false})
+	_, err := handler.dbInstance.NamedExec(query, gin.H{"accountId": accountId, "active": false})
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
@@ -141,7 +175,7 @@ func DeleteAccountById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
-func GetAccountsByUserId(ctx *gin.Context, dbInstance *sqlx.DB) {
+func (handler *AccountHandler) GetAccountsByUserId(ctx *gin.Context) {
 	id := ctx.Param("userId")
 
 	query := `
@@ -152,7 +186,7 @@ func GetAccountsByUserId(ctx *gin.Context, dbInstance *sqlx.DB) {
 	`
 
 	accounts := []schema.Account{}
-	err := dbInstance.Select(&accounts, query, id, true)
+	err := handler.dbInstance.Select(&accounts, query, id, true)
 
 	if len(accounts) == 0 {
 		ctx.AbortWithStatus(http.StatusNoContent)

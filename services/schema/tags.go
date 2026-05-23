@@ -2,7 +2,7 @@ package schema
 
 import "github.com/jmoiron/sqlx"
 
-type Tags struct {
+type Tag struct {
 	Base
 
 	TagId   string `db:"tagId" json:"tagId"`
@@ -19,12 +19,12 @@ func InitTags(db *sqlx.DB) {
 			userId TEXT NOT NULL,
 			active INTEGER DEFAULT 1,
 
-			name TEXT NOT NULL,
+			tagName TEXT NOT NULL,
 
 			createdAt INTEGER DEFAULT (strftime('%s','now')),
 			updatedAt INTEGER DEFAULT (strftime('%s','now')),
 
-			UNIQUE(userId, name),
+			UNIQUE(userId, tagName),
 
 			FOREIGN KEY(userId)
 				REFERENCES users(userId)

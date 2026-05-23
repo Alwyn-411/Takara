@@ -14,8 +14,8 @@ type Account struct {
 	Description   string `db:"description" json:"description,omitempty"`
 	Currency      string `db:"currency" json:"currency"`
 
-	Interest float64 `db:"interest" json:"interest,omitempty"`
-	Balance  float64 `db:"balance" json:"balance,omitempty"`
+	Interest string `db:"interest" json:"interest,omitempty"`
+	Balance  string `db:"balance" json:"balance,omitempty"`
 
 	Timestamp
 }

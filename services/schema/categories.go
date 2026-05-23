@@ -2,7 +2,7 @@ package schema
 
 import "github.com/jmoiron/sqlx"
 
-type Categories struct {
+type Category struct {
 	Base
 
 	CategoryId   string `db:"categoryId" json:"categoryId"`
@@ -19,16 +19,14 @@ func InitCategories(db *sqlx.DB) {
 			userId TEXT NOT NULL,
 			active INTEGER DEFAULT 1,
 
-			name TEXT NOT NULL,
+			categoryName TEXT NOT NULL,
 
 			createdAt INTEGER DEFAULT (strftime('%s','now')),
 			updatedAt INTEGER DEFAULT (strftime('%s','now')),
 
-			UNIQUE(userId, name),
+			UNIQUE(userId, categoryName),
 
-			FOREIGN KEY(userId)
-				REFERENCES users(userId)
-				ON DELETE CASCADE
+			FOREIGN KEY(userId) REFERENCES users(userId) ON DELETE CASCADE
 		);
 	`
 

@@ -32,7 +32,14 @@ func initTables(db *sqlx.DB) {
 	// Set Up Tables if not panic
 	schema.InitUsers(db)
 	schema.InitAccounts(db)
+	schema.InitCategories(db)
+	schema.InitTags(db)
+	schema.InitTransactions(db)
+	schema.InitTransactionTags(db)
 
+	// SetUp Indexes if not panic
+	schema.InitIndexUsers(db)
+	schema.InitIndexTransactions(db)
 }
 
 func main() {

@@ -23,7 +23,7 @@ import (
 func CreateCategory(ctx *gin.Context, dbInstance *sqlx.DB) (string, error) {
 	categoryId := uuid.New().String()
 
-	var data schema.Categories
+	data := schema.Category{}
 	err := ctx.ShouldBindJSON(&data)
 
 	if err != nil {
@@ -43,7 +43,8 @@ func CreateCategory(ctx *gin.Context, dbInstance *sqlx.DB) (string, error) {
 }
 
 func UpdateCategory(categoryId string, ctx *gin.Context, dbInstance *sqlx.DB) (string, error) {
-	data := schema.Categories{}
+	data := schema.Category{}
+
 	err := ctx.ShouldBindJSON(&data)
 	if err != nil {
 		return "", err
@@ -65,11 +66,11 @@ func UpdateCategory(categoryId string, ctx *gin.Context, dbInstance *sqlx.DB) (s
 	return categoryId, nil
 }
 
-func GetCategoryById(categoryId string, ctx *gin.Context, dbInstance *sqlx.DB) (schema.Categories, error) {
+func GetCategoryById(categoryId string, ctx *gin.Context, dbInstance *sqlx.DB) (schema.Category, error) {
 	query := `SELECT categoryId, categoryName, active FROM categories WHERE categoryId = ? AND active = ?`
 
-	category := schema.Categories{}
-	err := dbInstance.Get(&category, query, categoryId, true)
+	category := schema.Category{}
+	err := dbInstance.Get(&category, query, categoryId, 1)
 
 	if err == sql.ErrNoRows {
 		return category, err
@@ -82,23 +83,22 @@ func GetCategoryById(categoryId string, ctx *gin.Context, dbInstance *sqlx.DB) (
 	return category, nil
 }
 
-func GetCategoriesById(userId string, ctx *gin.Context, dbInstance *sqlx.DB) {
+func GetCategoriesByUserId(userId string, ctx *gin.Context, dbInstance *sqlx.DB) {
 	query := `SELECT userId, categoryId, categoryName, active FROM categories WHERE userId = ? AND active = ? LIMIT 20 `
 
-	categories := []schema.Categories{}
-	err := dbInstance.Select(&categories, query, userId, true)
+	categories := []schema.Category{}
+	err := dbInstance.Select(&categories, query, userId, 1)
+	if err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
 
 	if len(categories) == 0 {
 		ctx.AbortWithStatus(http.StatusNoContent)
 		return
 	}
 
-	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	var response schema.ListResponse[schema.Categories]
+	response := schema.ListResponse[schema.Category]{}
 
 	response.Count = len(categories)
 	response.Records = categories

@@ -10,7 +10,10 @@ import type { CreateResponse } from '../../../hooks/default';
 
 const { Text } = Typography;
 
-export interface Formfields extends Partial<Omit<Accounts, 'active' | 'createdAt' | 'updatedAt'>> {}
+export interface Formfields extends Partial<Omit<Accounts, 'active' | 'createdAt' | 'updatedAt' | 'balance' | 'interest'>> {
+    balance?: number;
+    interest?: number;
+}
 
 export const options: CheckboxGroupProps<string>['options'] = [
     { label: 'Savings Account', value: 'Savings' },
@@ -35,7 +38,7 @@ export const AccountCreate = () => {
     const currencyObj = currencies.find((c) => c.value === selectedCurrency);
 
     const onFinish: FormProps<Formfields>['onFinish'] = (values) => {
-        const AccountData: Formfields = {
+        const AccountData: Partial<Accounts> = {
             userId: useUserStore.getState().userId,
             type: values.type,
             name: values.name,
@@ -45,11 +48,11 @@ export const AccountCreate = () => {
         };
 
         if (!!values.currency) {
-            AccountData.balance = values.balance;
+            AccountData.balance = values.balance?.toString();
         }
 
         if (values.type === 'Savings') {
-            AccountData.interest = values.interest;
+            AccountData.interest = values.interest?.toString();
         }
 
         mutate(AccountData);

@@ -10,61 +10,93 @@ type Transaction struct {
 	AccountId     string `db:"accountId" json:"accountId"`
 	TransactionId string `db:"transactionId" json:"transactionId"`
 
-	Type             string  `db:"type" json:"type"`         // Debit | Credit
-	Amount           float64 `db:"amount" json:"amount"`     // Merchant-side amount
-	Merchant         string  `db:"merchant" json:"merchant"` // Name of the Merchant
-	MerchantCurrency string  `db:"merchantCurrency" json:"merchantCurrency"`
+	Type string `db:"type" json:"type"` // Debit | Credit
 
-	ExchangeRate float64 `db:"exchangeRate" json:"exchangeRate"` // Conversion rate at transaction time
-	BaseAmount   float64 `db:"baseAmount" json:"baseAmount"`     // Cost in account currency
+	// other party billed or settled amount
+	SettledAmount   string `db:"settledAmount" json:"settledAmount"`
+	SettledCurrency string `db:"settledCurrency" json:"settledCurrency"`
 
-	CategoryId  string `db:"categoryId" json:"categoryId"`
-	Description string `db:"description" json:"description,omitempty"`
+	// source account amount
+	AccountAmount   string `db:"accountAmount" json:"accountAmount"`     // Cost in account currency
+	AccountCurrency string `db:"accountCurrency" json:"accountCurrency"` // ISO 4217 e.g. "INR"
 
-	TransactionAt int64 `db:"transactionAt" json:"transactionAt"` // Transaction Timestamp
+	ExchangeRate string `db:"exchangeRate" json:"exchangeRate"` // Conversion rate at transaction time
+
+	Merchant      string `db:"merchant" json:"merchant"` // Name of the Merchant
+	CategoryId    string `db:"categoryId" json:"categoryId"`
+	Description   string `db:"description" json:"description,omitempty"`
+	TransactionAt int64  `db:"transactionAt" json:"transactionAt"` // Transaction Timestamp
 
 	Timestamp
 }
 
+// Join Transaction Tag Table for : many to one on tagId
+type TransactionTag struct {
+	TransactionId string `db:"transactionId" json:"transactionId"`
+	TagId         string `db:"tagId" json:"tagId"`
+}
+
 func InitTransactions(db *sqlx.DB) {
 	query := `
-		CREATE TABLE IF NOT EXISTS transactions (
+			CREATE TABLE IF NOT EXISTS transactions (
 			transactionId TEXT PRIMARY KEY NOT NULL,
-
 			userId TEXT NOT NULL,
 			active INTEGER DEFAULT 1,
 			accountId TEXT NOT NULL,
-
 			type TEXT NOT NULL,
-			amount REAL NOT NULL,
-
-			merchantCurrency TEXT NOT NULL,
-			exchangeRate REAL DEFAULT 1,
-			baseAmount REAL NOT NULL,
-
+ 
+			settledAmount TEXT NOT NULL,
+			settledCurrency TEXT NOT NULL,
+			accountAmount TEXT NOT NULL,
+			accountCurrency TEXT NOT NULL,
+			exchangeRate TEXT DEFAULT '1',
+ 
 			merchant TEXT NOT NULL,
-
 			categoryId TEXT,
 			description TEXT,
-
 			transactionAt INTEGER NOT NULL,
-
+ 
 			createdAt INTEGER DEFAULT (strftime('%s','now')),
 			updatedAt INTEGER DEFAULT (strftime('%s','now')),
-
-			FOREIGN KEY(userId)
-				REFERENCES users(userId)
-				ON DELETE CASCADE,
-
-			FOREIGN KEY(accountId)
-				REFERENCES accounts(accountId)
-				ON DELETE CASCADE,
-
-			FOREIGN KEY(categoryId)
-				REFERENCES categories(categoryId)
-				ON DELETE SET NULL
+ 
+			FOREIGN KEY(userId) REFERENCES users(userId) ON DELETE CASCADE,
+			FOREIGN KEY(accountId) REFERENCES accounts(accountId) ON DELETE CASCADE,
+			FOREIGN KEY(categoryId) REFERENCES categories(categoryId) ON DELETE SET NULL
 		);
 	`
 
 	db.MustExec(query)
+}
+
+func InitTransactionTags(db *sqlx.DB) {
+	query := `
+        CREATE TABLE IF NOT EXISTS transaction_tags (
+        transactionId TEXT NOT NULL,
+        tagId TEXT NOT NULL,
+        PRIMARY KEY (transactionId, tagId),
+        FOREIGN KEY(transactionId) REFERENCES transactions(transactionId) ON DELETE CASCADE,
+        FOREIGN KEY(tagId) REFERENCES tags(tagId) ON DELETE CASCADE
+    );
+    `
+
+	db.MustExec(query)
+}
+
+func InitIndexTransactions(db *sqlx.DB) {
+	db.MustExec(`
+		CREATE INDEX IF NOT EXISTS idx_transactions_user_date
+			ON transactions(userId, transactionAt);
+ 
+		CREATE INDEX IF NOT EXISTS idx_transactions_user_type
+			ON transactions(userId, type, active);
+ 
+		CREATE INDEX IF NOT EXISTS idx_transactions_category
+			ON transactions(userId, categoryId);
+ 
+		CREATE INDEX IF NOT EXISTS idx_transactions_merchant
+			ON transactions(userId, merchant);
+ 
+		CREATE INDEX IF NOT EXISTS idx_transaction_tags_tag
+			ON transaction_tags(tagId);
+	`)
 }
