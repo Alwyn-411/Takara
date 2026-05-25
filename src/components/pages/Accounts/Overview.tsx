@@ -2,7 +2,7 @@ import { Badge, Button, Card, Divider, Empty, message, Popconfirm, Row, Space, S
 import { useNavigate } from 'react-router-dom';
 import { currencies, type Accounts as AccountDataType } from '../../../types/Accounts';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { deleteAccountWithAccountId, listAccountsWithUserId } from '../../../hooks/accounts';
+import { deleteAccountWithAccountId, listAccountsWithUserId } from '../../../api/accounts';
 import { useUserStore } from '../../../store/User';
 import { DeleteOutlined } from '@ant-design/icons';
 const { Title, Text } = Typography;
@@ -57,6 +57,7 @@ export const Accounts = () => {
                     <Space size="small">
                         <Text>{currency?.symbol}</Text>
                         <Text>{value}</Text>
+                        <Text>{currency?.value}</Text>
                     </Space>
                 );
             },
@@ -70,10 +71,10 @@ export const Accounts = () => {
                     <Button
                         type="link"
                         onClick={() => {
-                            navigate(`/accounts/${record.accountId}/edit`);
+                            navigate(`/accounts/${record.accountId}/details`);
                         }}
                     >
-                        Edit
+                        View
                     </Button>
                     <Popconfirm
                         title="Are you sure ?"

@@ -1,15 +1,13 @@
-package handlers
+package transactions
 
 import (
 	"database/sql"
 	"net/http"
-	"takara/services/forex"
 	"takara/services/schema"
 	"time"
 
 	"github.com/bojanz/currency"
 	"github.com/gin-gonic/gin"
-	"github.com/jmoiron/sqlx"
 )
 
 type UpdateTransactionRequest struct {
@@ -21,7 +19,9 @@ type UpdateTransactionRequest struct {
 	TransactionAt   int64  `json:"transactionAt"`
 }
 
-func UpdateTransaction(transactionId string, ctx *gin.Context, dbInstance *sqlx.DB, forexService *forex.Frankfurter) {
+func (handler *TransactionsHandler) UpdateTransaction(ctx *gin.Context) {
+	transactionId := ctx.Param("transactionId")
+
 	var req UpdateTransactionRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -30,7 +30,7 @@ func UpdateTransaction(transactionId string, ctx *gin.Context, dbInstance *sqlx.
 
 	// Fetch existing transaction
 	existing := schema.Transaction{}
-	err := dbInstance.Get(&existing, `
+	err := handler.dbInstance.Get(&existing, `
 		SELECT * FROM transactions WHERE transactionId = ? AND active = 1
 	`, transactionId)
 	if err == sql.ErrNoRows {
@@ -83,7 +83,7 @@ func UpdateTransaction(transactionId string, ctx *gin.Context, dbInstance *sqlx.
 			existing.AccountAmount = settledAmount.Number()
 			existing.ExchangeRate = "1"
 		} else {
-			rate, err := forexService.GetRate(newSettledCurrency, existing.AccountCurrency)
+			rate, err := handler.forEx.GetRate(newSettledCurrency, existing.AccountCurrency)
 			if err != nil {
 				ctx.JSON(http.StatusBadGateway, gin.H{"error": "could not fetch exchange rate"})
 				return
@@ -98,7 +98,7 @@ func UpdateTransaction(transactionId string, ctx *gin.Context, dbInstance *sqlx.
 		}
 
 		// Recalculate balance: reverse old amount, apply new amount
-		dbTx, err := dbInstance.Beginx()
+		dbTx, err := handler.dbInstance.Beginx()
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start db transaction"})
 			return
@@ -140,7 +140,7 @@ func UpdateTransaction(transactionId string, ctx *gin.Context, dbInstance *sqlx.
 		}
 	} else {
 		// Simple update — no amount change, no balance recalculation needed
-		_, err = dbInstance.NamedExec(`
+		_, err = handler.dbInstance.NamedExec(`
 			UPDATE transactions SET
 				merchant = :merchant,
 				categoryId = :categoryId,

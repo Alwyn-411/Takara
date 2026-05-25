@@ -1,4 +1,4 @@
-// Using FrankfurterEndpoint v2 endpoint for conversion rates
+// Using ForExEndpoint v2 endpoint for conversion rates
 package forex
 
 import (
@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const frankfurterEndpoint string = "api.frankfurter.dev"
+const ForExEndpoint string = "api.ForEx.dev"
 
 type response struct {
 	Base  string  `json:"base"`
@@ -23,15 +23,15 @@ type cache struct {
 	fetchedAt time.Time
 }
 
-type Frankfurter struct {
+type ForEx struct {
 	client *http.Client
 	cache  map[string]cache
 	mu     sync.RWMutex
 	ttl    time.Duration
 }
 
-func NewAccessor() *Frankfurter {
-	return &Frankfurter{
+func NewAccessor() *ForEx {
+	return &ForEx{
 		client: &http.Client{Timeout: 10 * time.Second},
 		cache:  make(map[string]cache),
 		ttl:    1 * time.Hour, // rates don't change intraday
@@ -39,7 +39,7 @@ func NewAccessor() *Frankfurter {
 }
 
 // GetRate fetches the current rate for a currency pair
-func (s *Frankfurter) GetRate(base, quote string) (string, error) {
+func (s *ForEx) GetRate(base, quote string) (string, error) {
 	if base == quote {
 		return "1", nil
 	}
@@ -52,15 +52,15 @@ func (s *Frankfurter) GetRate(base, quote string) (string, error) {
 	}
 	s.mu.RUnlock()
 
-	url := fmt.Sprintf("https://%s/v2/rate/%s/%s", frankfurterEndpoint, base, quote)
+	url := fmt.Sprintf("https://%s/v2/rate/%s/%s", ForExEndpoint, base, quote)
 	resp, err := s.client.Get(url)
 	if err != nil {
-		return "", fmt.Errorf("frankfurter request failed: %w", err)
+		return "", fmt.Errorf("ForEx request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("frankfurter returned %d", resp.StatusCode)
+		return "", fmt.Errorf("ForEx returned %d", resp.StatusCode)
 	}
 
 	var data response
@@ -78,10 +78,10 @@ func (s *Frankfurter) GetRate(base, quote string) (string, error) {
 }
 
 // GetHistoricalRate fetches the rate on a specific date
-func (s *Frankfurter) GetHistoricalRate(base, quote, date string) (string, error) {
+func (s *ForEx) GetHistoricalRate(base, quote, date string) (string, error) {
 	url := fmt.Sprintf(
 		"https://%s/v2/rate/%s/%s?date=%s",
-		frankfurterEndpoint, base, quote, date,
+		ForExEndpoint, base, quote, date,
 	)
 
 	resp, err := s.client.Get(url)
@@ -90,7 +90,7 @@ func (s *Frankfurter) GetHistoricalRate(base, quote, date string) (string, error
 	}
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("frankfurter returned %d", resp.StatusCode)
+		return "", fmt.Errorf("ForEx returned %d", resp.StatusCode)
 	}
 
 	defer resp.Body.Close()

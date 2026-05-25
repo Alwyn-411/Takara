@@ -1,4 +1,4 @@
-package handlers
+package transactions
 
 import (
 	"database/sql"
@@ -6,7 +6,6 @@ import (
 	"takara/services/schema"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jmoiron/sqlx"
 )
 
 type TransactionResponse struct {
@@ -14,7 +13,13 @@ type TransactionResponse struct {
 	Tags []schema.Tag `json:"tags"`
 }
 
-func GetTransactionById(transactionId string, ctx *gin.Context, dbInstance *sqlx.DB) {
+func (handler *TransactionsHandler) GetTransactionById(ctx *gin.Context) {
+	/*
+		1. Fetch Data from DB with transactionId
+		2. Fetch Tags from DB related to this transaction
+	*/
+	transactionId := ctx.Param("transactionId")
+
 	query := `
 		SELECT transactionId, userId, accountId, type,
 			settledAmount, settledCurrency,
@@ -27,7 +32,7 @@ func GetTransactionById(transactionId string, ctx *gin.Context, dbInstance *sqlx
 	`
 
 	tx := schema.Transaction{}
-	err := dbInstance.Get(&tx, query, transactionId)
+	err := handler.dbInstance.Get(&tx, query, transactionId)
 	if err == sql.ErrNoRows {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
 		return
@@ -39,7 +44,7 @@ func GetTransactionById(transactionId string, ctx *gin.Context, dbInstance *sqlx
 
 	// Fetch associated tags
 	tags := []schema.Tag{}
-	dbInstance.Select(&tags, `
+	handler.dbInstance.Select(&tags, `
 		SELECT t.tagId, t.tagName, t.userId, t.active, t.createdAt, t.updatedAt
 		FROM tags t
 		JOIN transaction_tags tt ON t.tagId = tt.tagId
@@ -54,39 +59,11 @@ func GetTransactionById(transactionId string, ctx *gin.Context, dbInstance *sqlx
 	ctx.JSON(http.StatusOK, response)
 }
 
-func GetTransactionsByUserId(userId string, ctx *gin.Context, dbInstance *sqlx.DB) {
-	query := `
-		SELECT transactionId, userId, accountId, type,
-			settledAmount, settledCurrency,
-			accountAmount, accountCurrency,
-			exchangeRate, merchant, categoryId,
-			description, transactionAt, active,
-			createdAt, updatedAt
-		FROM transactions
-		WHERE userId = ? AND active = 1
-		ORDER BY transactionAt DESC
-		LIMIT 50
-	`
+func (handler *TransactionsHandler) GetTransactionsByAccountId(ctx *gin.Context) {
+	accountId := ctx.Param("accountId")
+	limit := ctx.Param("limit")
+	offset := ctx.Param("offset")
 
-	transactions := []schema.Transaction{}
-	err := dbInstance.Select(&transactions, query, userId)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	if len(transactions) == 0 {
-		ctx.JSON(http.StatusOK, schema.ListResponse[schema.Transaction]{Count: 0, Records: []schema.Transaction{}})
-		return
-	}
-
-	response := schema.ListResponse[schema.Transaction]{
-		Count:   len(transactions),
-		Records: transactions,
-	}
-	ctx.JSON(http.StatusOK, response)
-}
-
-func GetTransactionsByAccountId(accountId string, ctx *gin.Context, dbInstance *sqlx.DB) {
 	query := `
 		SELECT transactionId, userId, accountId, type,
 			settledAmount, settledCurrency,
@@ -97,11 +74,11 @@ func GetTransactionsByAccountId(accountId string, ctx *gin.Context, dbInstance *
 		FROM transactions
 		WHERE accountId = ? AND active = 1
 		ORDER BY transactionAt DESC
-		LIMIT 50
+		LIMIT ? OFFSET ?
 	`
 
 	transactions := []schema.Transaction{}
-	err := dbInstance.Select(&transactions, query, accountId)
+	err := handler.dbInstance.Select(&transactions, query, accountId, limit, offset)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -117,3 +94,39 @@ func GetTransactionsByAccountId(accountId string, ctx *gin.Context, dbInstance *
 	}
 	ctx.JSON(http.StatusOK, response)
 }
+
+/*	TODO: This might not be needed :: Think about it
+	func (handler *TransactionsHandler) GetTransactionsByUserId(ctx *gin.Context) {
+		userId := ctx.Param("userId")
+
+		query := `
+			SELECT transactionId, userId, accountId, type,
+				settledAmount, settledCurrency,
+				accountAmount, accountCurrency,
+				exchangeRate, merchant, categoryId,
+				description, transactionAt, active,
+				createdAt, updatedAt
+			FROM transactions
+			WHERE userId = ? AND active = 1
+			ORDER BY transactionAt DESC
+			LIMIT 50
+		`
+
+		transactions := []schema.Transaction{}
+		err := handler.dbInstance.Select(&transactions, query, userId)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if len(transactions) == 0 {
+			ctx.JSON(http.StatusOK, schema.ListResponse[schema.Transaction]{Count: 0, Records: []schema.Transaction{}})
+			return
+		}
+
+		response := schema.ListResponse[schema.Transaction]{
+			Count:   len(transactions),
+			Records: transactions,
+		}
+		ctx.JSON(http.StatusOK, response)
+	}
+*/

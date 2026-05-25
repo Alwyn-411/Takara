@@ -2,17 +2,21 @@ package router
 
 import (
 	"net/http"
+	"takara/services/forex"
 	"takara/services/handlers"
+	"takara/services/handlers/transactions"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 )
 
 func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
+	forexSvc := forex.NewAccessor()
+
 	userHandler := handlers.NewUserHandler(db)
 	authHandler := handlers.NewAuthHandler(db)
 	accountHandler := handlers.NewAccountHandler(db)
-	// forexSvc := forex.NewAccessor()
+	transactionsHandler := transactions.NewTransactionsHandler(db, forexSvc)
 
 	// v1 routes
 	engine.GET("/ping", func(ctx *gin.Context) { ctx.JSON(http.StatusAccepted, gin.H{"message": "pong"}) })
@@ -32,8 +36,9 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 	engine.GET("/v1/account/user/:userId", func(ctx *gin.Context) { accountHandler.GetAccountsByUserId(ctx) })
 
 	// Trasactions Routes
-	engine.POST("/v1/transactions/")
-	engine.GET("/v1/transactions/:transaction_id")
-	engine.PUT("/v1/transactions/:transaction_id")
-	engine.DELETE("/v1/transactions/:transaction_id")
+	engine.POST("/v1/transaction/", func(ctx *gin.Context) { transactionsHandler.CreateTransaction(ctx) })
+	engine.GET("/v1/transaction/:transactionId", func(ctx *gin.Context) { transactionsHandler.GetTransactionById(ctx) })
+	engine.PUT("/v1/transaction/:transactionId", func(ctx *gin.Context) { transactionsHandler.UpdateTransaction(ctx) })
+	engine.DELETE("/v1/transaction/:transactionId", func(ctx *gin.Context) { transactionsHandler.DeleteTransaction(ctx) })
+	engine.GET("/v1/transaction/account/:accountId", func(ctx *gin.Context) { transactionsHandler.GetTransactionsByAccountId(ctx) })
 }

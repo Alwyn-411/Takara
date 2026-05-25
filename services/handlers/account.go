@@ -164,9 +164,9 @@ func (handler *AccountHandler) DeleteAccountById(ctx *gin.Context) {
 	accountId := ctx.Param("accountId")
 
 	query := `
-		UPDATE accounts SET active = :active WHERE accountId = :accountId
+		UPDATE accounts SET active = :active, updatedAt = :updatedAt WHERE accountId = :accountId
 	`
-	_, err := handler.dbInstance.NamedExec(query, gin.H{"accountId": accountId, "active": false})
+	_, err := handler.dbInstance.NamedExec(query, gin.H{"accountId": accountId, "active": 0, "updatedAt": time.Now().Unix()})
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return

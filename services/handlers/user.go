@@ -193,13 +193,14 @@ func (handler *UserHandler) DeleteUserById(ctx *gin.Context) {
 
 	query := `
 		UPDATE users
-		SET active = :active
+		SET active = :active, updatedAt = :updatedAt
 		WHERE userId = :userId
 	`
 
 	result, err := handler.dbInstance.NamedExec(query, gin.H{
-		"userId": id,
-		"active": false,
+		"userId":    id,
+		"active":    0,
+		"updatedAt": time.Now().Unix(),
 	})
 
 	if err != nil {

@@ -1,4 +1,4 @@
-package handlers
+package transactions
 
 import (
 	"database/sql"
@@ -8,13 +8,20 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/jmoiron/sqlx"
 )
 
-func DeleteTransaction(transactionId string, ctx *gin.Context, dbInstance *sqlx.DB) {
-	// Fetch the transaction to reverse the balance
+func (handler *TransactionsHandler) DeleteTransaction(ctx *gin.Context) {
+	/*
+		1. Get Account Amount
+		2. Begin Transaction
+		3. Soft Delete Transaction
+		4. Reverse Transaction on the Account Amount
+		5. Wrap up
+	*/
+	transactionId := ctx.Param("transactionId")
+
 	existing := schema.Transaction{}
-	err := dbInstance.Get(&existing, `
+	err := handler.dbInstance.Get(&existing, `
 		SELECT transactionId, accountId, type, accountAmount
 		FROM transactions
 		WHERE transactionId = ? AND active = 1
@@ -28,7 +35,7 @@ func DeleteTransaction(transactionId string, ctx *gin.Context, dbInstance *sqlx.
 		return
 	}
 
-	dbTx, err := dbInstance.Beginx()
+	dbTx, err := handler.dbInstance.Beginx()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start db transaction"})
 		return
@@ -68,5 +75,5 @@ func DeleteTransaction(transactionId string, ctx *gin.Context, dbInstance *sqlx.
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "transaction deleted"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }

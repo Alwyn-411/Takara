@@ -1,32 +1,32 @@
-import { Alert, Breadcrumb, Button, Card, Col, Form, Input, InputNumber, Radio, Row, Select, Typography, type FormProps } from 'antd';
-import TextArea from 'antd/es/input/TextArea';
-import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import type { CheckboxGroupProps } from 'antd/es/checkbox';
+import { Alert, Breadcrumb, Button, Card, Col, Form, Input, InputNumber, message, Radio, Row, Select, Typography, type FormProps } from 'antd';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { editAccountWithAccountId, getAccountWithAccountId } from '../../../api/accounts';
 import { currencies, type Accounts } from '../../../types/Accounts';
-import { createAccount } from '../../../hooks/accounts';
 import { useUserStore } from '../../../store/User';
-import type { CreateResponse } from '../../../hooks/default';
+import { options, type Formfields } from './Create';
+import { useEffect } from 'react';
 
+const { TextArea } = Input;
 const { Text } = Typography;
 
-export interface Formfields extends Partial<Omit<Accounts, 'active' | 'createdAt' | 'updatedAt' | 'balance' | 'interest'>> {
-    balance?: number;
-    interest?: number;
-}
+export const AccountEdit = () => {
+    const { accountId } = useParams<{ accountId: string }>();
+    const { userId } = useUserStore();
 
-export const options: CheckboxGroupProps<string>['options'] = [
-    { label: 'Savings Account', value: 'Savings' },
-    { label: 'Current Account', value: 'Current' },
-];
-
-export const AccountCreate = () => {
     const navigate = useNavigate();
     const [form] = Form.useForm();
 
-    const { mutate, isPending, isError } = useMutation<CreateResponse, Error, Partial<Accounts>>({
-        mutationFn: createAccount,
+    const { data, isFetching } = useQuery({
+        queryFn: () => getAccountWithAccountId(accountId!!),
+        queryKey: ['accounts', accountId],
+        enabled: !!accountId && !!userId,
+    });
+
+    const { mutate, isError, isPending } = useMutation({
+        mutationFn: editAccountWithAccountId,
         onSuccess: () => {
+            message.success('Edited Successfully');
             navigate(-1);
         },
     });
@@ -39,7 +39,7 @@ export const AccountCreate = () => {
 
     const onFinish: FormProps<Formfields>['onFinish'] = (values) => {
         const AccountData: Partial<Accounts> = {
-            userId: useUserStore.getState().userId,
+            accountId: accountId!!,
             type: values.type,
             name: values.name,
             accountNumber: values.accountNumber,
@@ -55,8 +55,16 @@ export const AccountCreate = () => {
             AccountData.interest = values.interest?.toString();
         }
 
-        mutate(AccountData);
+        if (values.type === 'Current') {
+            AccountData.interest = '0';
+        }
+
+        mutate({ accountId: accountId!!, account: AccountData });
     };
+
+    useEffect(() => {
+        if (!!data) form.setFieldsValue(data);
+    }, [data]);
 
     return (
         <Col span={24}>
@@ -68,7 +76,7 @@ export const AccountCreate = () => {
                             href: '/accounts',
                         },
                         {
-                            title: 'Create New Bank Account',
+                            title: 'Edit Bank Account',
                         },
                     ]}
                 />
@@ -77,21 +85,14 @@ export const AccountCreate = () => {
                 <Card style={{ width: '100%' }}>
                     {isError && (
                         <Alert
-                            title="Account Creation Failed"
+                            title="Account Edit Failed"
                             description={<Text>Error occured while processing this request</Text>}
                             type="error"
                             showIcon
                         />
                     )}
 
-                    <Form<Formfields>
-                        form={form}
-                        layout="vertical"
-                        size="large"
-                        onFinish={onFinish}
-                        requiredMark="optional"
-                        initialValues={{ type: 'Savings' }}
-                    >
+                    <Form<Formfields> form={form} layout="vertical" size="large" onFinish={onFinish} requiredMark="optional">
                         <Row gutter={16}>
                             <Col span={12}>
                                 <Form.Item
@@ -178,8 +179,8 @@ export const AccountCreate = () => {
                             </Col>
                         </Row>
                         <Row justify="end">
-                            <Button type="primary" htmlType="submit" size="large" loading={isPending}>
-                                Create Bank Account
+                            <Button type="primary" htmlType="submit" size="large" loading={isPending || isFetching}>
+                                Edit Bank Account
                             </Button>
                         </Row>
                     </Form>

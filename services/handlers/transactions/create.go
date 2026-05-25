@@ -1,43 +1,15 @@
-package handlers
+package transactions
 
 import (
 	"fmt"
 	"net/http"
-	"takara/services/forex"
 	"takara/services/schema"
 	"time"
 
 	"github.com/bojanz/currency"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 )
-
-// type Transaction struct {
-// 	Base
-
-// 	AccountId     string `db:"accountId" json:"accountId"`
-// 	TransactionId string `db:"transactionId" json:"transactionId"`
-
-// 	Type string `db:"type" json:"type"` // Debit | Credit
-
-// 	// other party billed or settled amount
-// 	SettledAmount   string `db:"settledAmount" json:"settledAmount"`
-// 	SettledCurrency string `db:"settledCurrency" json:"settledCurrency"`
-
-// 	// source account amount
-// 	AccountAmount   string `db:"accountAmount" json:"accountAmount"`     // Cost in account currency
-// 	AccountCurrency string `db:"accountCurrency" json:"accountCurrency"` // ISO 4217 e.g. "INR"
-
-// 	ExchangeRate string `db:"exchangeRate" json:"exchangeRate"` // Conversion rate at transaction time
-
-// 	Merchant      string `db:"merchant" json:"merchant"` // Name of the Merchant
-// 	CategoryId    string `db:"categoryId" json:"categoryId"`
-// 	Description   string `db:"description" json:"description,omitempty"`
-// 	TransactionAt int64  `db:"transactionAt" json:"transactionAt"` // Transaction Timestamp
-
-// 	Timestamp
-// }
 
 type CreateTransactionRequest struct {
 	UserId          string   `json:"userId" binding:"required"`
@@ -52,7 +24,17 @@ type CreateTransactionRequest struct {
 	TagIds          []string `json:"tagIds,omitempty"`
 }
 
-func CreateTransaction(ctx *gin.Context, dbInstance *sqlx.DB, forexService *forex.Frankfurter) {
+func (handler *TransactionsHandler) CreateTransaction(ctx *gin.Context) {
+	/*
+		1. Parse Data from Body
+		2. Query From Account Remaining Balance
+		3. Convert Amount to account currency with forex
+		4. Begin transaction
+		5. Create Row with NEW data in transactions table
+		6. Bind Tags to Transactions
+		7. Update Account Balance Value
+		8. Wrap up
+	*/
 	var data CreateTransactionRequest
 
 	if err := ctx.ShouldBindJSON(&data); err != nil {
@@ -62,7 +44,7 @@ func CreateTransaction(ctx *gin.Context, dbInstance *sqlx.DB, forexService *fore
 
 	settledAmount, err := currency.NewAmount(data.SettledAmount, data.SettledCurrency)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid amount or currency"})
+		ctx.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
@@ -73,7 +55,7 @@ func CreateTransaction(ctx *gin.Context, dbInstance *sqlx.DB, forexService *fore
 	`
 
 	var account schema.Account
-	err = dbInstance.Get(&account, getAccountQuery, data.AccountId)
+	err = handler.dbInstance.Get(&account, getAccountQuery, data.AccountId)
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, fmt.Errorf("No Account | Error: %s", err.Error()))
 		return
@@ -83,15 +65,15 @@ func CreateTransaction(ctx *gin.Context, dbInstance *sqlx.DB, forexService *fore
 	var rateUsed string
 
 	if data.SettledCurrency != account.Currency {
-		rate, err := forexService.GetRate(data.SettledCurrency, account.Currency)
+		rate, err := handler.forEx.GetRate(data.SettledCurrency, account.Currency)
 		if err != nil {
-			ctx.JSON(http.StatusBadGateway, gin.H{"error": "could not fetch exchange rate"})
+			ctx.AbortWithError(http.StatusBadGateway, err)
 			return
 		}
 
 		accountAmount, err = settledAmount.Convert(account.Currency, rate)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "conversion failed"})
+			ctx.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
@@ -120,9 +102,9 @@ func CreateTransaction(ctx *gin.Context, dbInstance *sqlx.DB, forexService *fore
 		TransactionAt:   data.TransactionAt,
 	}
 
-	dbTx, err := dbInstance.Beginx()
+	dbTx, err := handler.dbInstance.Beginx()
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start db transaction"})
+		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -143,11 +125,10 @@ func CreateTransaction(ctx *gin.Context, dbInstance *sqlx.DB, forexService *fore
 
 	if err != nil {
 		dbTx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to insert transaction"})
+		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	// Insert tags if provided
 	if len(data.TagIds) > 0 {
 		for _, tagId := range data.TagIds {
 			_, err = dbTx.Exec(
@@ -156,7 +137,7 @@ func CreateTransaction(ctx *gin.Context, dbInstance *sqlx.DB, forexService *fore
 			)
 			if err != nil {
 				dbTx.Rollback()
-				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to link tag: " + tagId})
+				ctx.AbortWithError(http.StatusInternalServerError, err)
 				return
 			}
 		}
@@ -169,21 +150,22 @@ func CreateTransaction(ctx *gin.Context, dbInstance *sqlx.DB, forexService *fore
 	_, err = dbTx.Exec(
 		fmt.Sprintf(`
 			UPDATE accounts
-			SET balance = printf('%%.2f', CAST(balance AS REAL) %s CAST(? AS REAL)),
-				updatedAt = ?
+			SET balance = printf('%%.2f', CAST(balance AS REAL) %s CAST(? AS REAL)), updatedAt = ?
 			WHERE accountId = ?`, sign),
 		args.AccountAmount, time.Now().Unix(), args.AccountId,
 	)
 	if err != nil {
 		dbTx.Rollback()
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update balance"})
+		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	if err := dbTx.Commit(); err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit"})
+		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, args)
+	ctx.JSON(http.StatusCreated, gin.H{
+		"id": transactionId,
+	})
 }
