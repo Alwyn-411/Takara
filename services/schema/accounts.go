@@ -23,24 +23,19 @@ type Account struct {
 func InitAccounts(dbInstance *sqlx.DB) {
 	command := `
 		CREATE TABLE IF NOT EXISTS accounts (
+		accountId TEXT PRIMARY KEY NOT NULL,
 		userId TEXT NOT NULL,
 		active INTEGER DEFAULT 1,
-
-		accountId TEXT PRIMARY KEY NOT NULL,
 		type TEXT NOT NULL,
 		name TEXT NOT NULL,
 		accountNumber TEXT NOT NULL,
 		description TEXT,
-		currency TEXT NOT NULL,
-
-		interest REAL DEFAULT 0,
-		balance REAL DEFAULT 0,
-
+		currency TEXT NOT NULL CHECK(length(currency) = 3),  
+		interest TEXT DEFAULT '0',                            
+		balance TEXT DEFAULT '0',                             
 		createdAt INTEGER DEFAULT (strftime('%s','now')),
 		updatedAt INTEGER DEFAULT (strftime('%s','now')),
-
 		FOREIGN KEY(userId) REFERENCES users(userId) ON DELETE CASCADE
 	);`
-
 	dbInstance.MustExec(command)
 }

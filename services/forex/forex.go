@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const ForExEndpoint string = "api.ForEx.dev"
+const ForExEndpoint string = "api.frankfurter.dev"
 
 type response struct {
 	Base  string  `json:"base"`

@@ -1,4 +1,4 @@
-import type { Transaction } from '../types/Transactions';
+import type { Category, Merchant, Tag, Transaction } from '../types/Transactions';
 import { axiosInstance } from './client';
 import type { CreateResponse, EditOrDeleteResponse, ListResponse } from './default';
 
@@ -25,7 +25,22 @@ export const deleteTransactionWithTransactionId = async (transactionId: string):
     return response.data;
 };
 
-export const listAccountsWithUserId = async (accountId: string): Promise<ListResponse<Transaction>> => {
+export const listTransactionsByAccountId = async (accountId: string): Promise<ListResponse<Transaction>> => {
     const response = await axiosInstance.get<ListResponse<Transaction>>(`/v1/transaction/account/${accountId}`);
+    return response.data;
+};
+
+export const listMerchants = async (): Promise<ListResponse<Merchant>> => {
+    const response = await axiosInstance.get<ListResponse<Merchant>>('/v1/merchants/list');
+    return response.data;
+};
+
+export const listCategories = async (): Promise<ListResponse<Category>> => {
+    const response = await axiosInstance.get<ListResponse<Category>>('/v1/category/list');
+    return response.data;
+};
+
+export const listTag = async (): Promise<ListResponse<Tag>> => {
+    const response = await axiosInstance.get<ListResponse<Tag>>('/v1/tag/list');
     return response.data;
 };

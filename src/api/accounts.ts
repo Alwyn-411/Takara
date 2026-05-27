@@ -22,7 +22,7 @@ export const deleteAccountWithAccountId = async (accountId: string): Promise<Edi
     return response.data;
 };
 
-export const listAccountsWithUserId = async (userId: string): Promise<ListResponse<Accounts>> => {
-    const response = await axiosInstance.get<ListResponse<Accounts>>(`/v1/account/user/${userId}`);
+export const listAccountsWithUserId = async (): Promise<ListResponse<Accounts>> => {
+    const response = await axiosInstance.get<ListResponse<Accounts>>(`/v1/account/list`);
     return response.data;
 };

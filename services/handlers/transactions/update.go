@@ -3,6 +3,7 @@ package transactions
 import (
 	"database/sql"
 	"net/http"
+	"takara/services/handlers"
 	"takara/services/schema"
 	"time"
 
@@ -11,12 +12,13 @@ import (
 )
 
 type UpdateTransactionRequest struct {
-	SettledAmount   string `json:"settledAmount"`
-	SettledCurrency string `json:"settledCurrency"`
-	Merchant        string `json:"merchant"`
-	CategoryId      string `json:"categoryId"`
-	Description     string `json:"description"`
-	TransactionAt   int64  `json:"transactionAt"`
+	SettledAmount   *string  `json:"settledAmount"`
+	SettledCurrency *string  `json:"settledCurrency"`
+	MerchantName    *string  `json:"merchantName"`
+	CategoryName    *string  `json:"categoryName"`
+	Description     *string  `json:"description"`
+	TransactionAt   *int64   `json:"transactionAt"`
+	TagNames        []string `json:"tagNames"`
 }
 
 func (handler *TransactionsHandler) UpdateTransaction(ctx *gin.Context) {
@@ -28,54 +30,86 @@ func (handler *TransactionsHandler) UpdateTransaction(ctx *gin.Context) {
 		return
 	}
 
-	// Fetch existing transaction
+	// Load existing transaction
 	existing := schema.Transaction{}
-	err := handler.dbInstance.Get(&existing, `
-		SELECT * FROM transactions WHERE transactionId = ? AND active = 1
-	`, transactionId)
-	if err == sql.ErrNoRows {
+	if err := handler.dbInstance.Get(&existing, `
+		SELECT transactionId, userId, accountId, type,
+			settledAmount, settledCurrency,
+			accountAmount, accountCurrency,
+			exchangeRate, merchantId, categoryId,
+			description, transactionAt, active,
+			createdAt, updatedAt
+		FROM transactions
+		WHERE transactionId = ? AND active = 1
+	`, transactionId); err == sql.ErrNoRows {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
 		return
-	}
-	if err != nil {
+	} else if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Apply updates — keep existing values if not provided
-	if req.Merchant != "" {
-		existing.Merchant = req.Merchant
+	oldAccountAmount := existing.AccountAmount
+	now := time.Now().Unix()
+
+	// Detect if the financial fields changed
+	amountChanged := req.SettledAmount != nil && *req.SettledAmount != existing.SettledAmount
+	currencyChanged := req.SettledCurrency != nil && *req.SettledCurrency != existing.SettledCurrency
+	needsRebalance := amountChanged || currencyChanged
+
+	// Prepare new settled values
+	newSettledAmountStr := existing.SettledAmount
+	newSettledCurrency := existing.SettledCurrency
+	if req.SettledAmount != nil {
+		newSettledAmountStr = *req.SettledAmount
 	}
-	if req.CategoryId != "" {
-		existing.CategoryId = req.CategoryId
+	if req.SettledCurrency != nil {
+		newSettledCurrency = *req.SettledCurrency
 	}
-	if req.Description != "" {
-		existing.Description = req.Description
+	if req.Description != nil {
+		existing.Description = *req.Description
 	}
-	if req.TransactionAt != 0 {
-		existing.TransactionAt = req.TransactionAt
+	if req.TransactionAt != nil {
+		existing.TransactionAt = *req.TransactionAt
 	}
 
-	// If amount or currency changed, recalculate conversion
-	amountChanged := req.SettledAmount != "" && req.SettledAmount != existing.SettledAmount
-	currencyChanged := req.SettledCurrency != "" && req.SettledCurrency != existing.SettledCurrency
+	// Begin DB transaction
+	dbTx, err := handler.dbInstance.Beginx()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start db transaction"})
+		return
+	}
 
-	if amountChanged || currencyChanged {
-		newSettledAmount := existing.SettledAmount
-		newSettledCurrency := existing.SettledCurrency
-		if req.SettledAmount != "" {
-			newSettledAmount = req.SettledAmount
-		}
-		if req.SettledCurrency != "" {
-			newSettledCurrency = req.SettledCurrency
-		}
-
-		settledAmount, err := currency.NewAmount(newSettledAmount, newSettledCurrency)
+	// Resolve merchant name → ID
+	if req.MerchantName != nil {
+		merchantId, err := handlers.ResolveOrCreateMerchant(dbTx, existing.UserID, *req.MerchantName)
 		if err != nil {
+			dbTx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve merchant"})
+			return
+		}
+		existing.MerchantId = merchantId
+	}
+
+	// Resolve category name → ID
+	if req.CategoryName != nil {
+		categoryId, err := handlers.ResolveOrCreateCategory(dbTx, existing.UserID, *req.CategoryName)
+		if err != nil {
+			dbTx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve category"})
+			return
+		}
+		existing.CategoryId = categoryId
+	}
+
+	// Recompute account amount if settled amount/currency changed
+	if needsRebalance {
+		settledAmount, err := currency.NewAmount(newSettledAmountStr, newSettledCurrency)
+		if err != nil {
+			dbTx.Rollback()
 			ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid amount or currency"})
 			return
 		}
-
 		existing.SettledAmount = settledAmount.Number()
 		existing.SettledCurrency = newSettledCurrency
 
@@ -85,81 +119,96 @@ func (handler *TransactionsHandler) UpdateTransaction(ctx *gin.Context) {
 		} else {
 			rate, err := handler.forEx.GetRate(newSettledCurrency, existing.AccountCurrency)
 			if err != nil {
+				dbTx.Rollback()
 				ctx.JSON(http.StatusBadGateway, gin.H{"error": "could not fetch exchange rate"})
 				return
 			}
 			converted, err := settledAmount.Convert(existing.AccountCurrency, rate)
 			if err != nil {
+				dbTx.Rollback()
 				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "conversion failed"})
 				return
 			}
 			existing.AccountAmount = converted.Round().Number()
 			existing.ExchangeRate = rate
 		}
+	}
 
-		// Recalculate balance: reverse old amount, apply new amount
-		dbTx, err := handler.dbInstance.Beginx()
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start db transaction"})
-			return
-		}
+	// Update the transaction row
+	if _, err = dbTx.NamedExec(`
+		UPDATE transactions SET
+			settledAmount   = :settledAmount,
+			settledCurrency = :settledCurrency,
+			accountAmount   = :accountAmount,
+			exchangeRate    = :exchangeRate,
+			merchantId      = :merchantId,
+			categoryId      = :categoryId,
+			description     = :description,
+			transactionAt   = :transactionAt,
+			updatedAt       = :updatedAt
+		WHERE transactionId = :transactionId
+	`, gin.H{
+		"transactionId":   transactionId,
+		"settledAmount":   existing.SettledAmount,
+		"settledCurrency": existing.SettledCurrency,
+		"accountAmount":   existing.AccountAmount,
+		"exchangeRate":    existing.ExchangeRate,
+		"merchantId":      existing.MerchantId,
+		"categoryId":      existing.CategoryId,
+		"description":     existing.Description,
+		"transactionAt":   existing.TransactionAt,
+		"updatedAt":       now,
+	}); err != nil {
+		dbTx.Rollback()
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update transaction"})
+		return
+	}
 
-		_, err = dbTx.NamedExec(`
-			UPDATE transactions SET
-				settledAmount = :settledAmount,
-				settledCurrency = :settledCurrency,
-				accountAmount = :accountAmount,
-				exchangeRate = :exchangeRate,
-				merchant = :merchant,
-				categoryId = :categoryId,
-				description = :description,
-				transactionAt = :transactionAt,
-				updatedAt = :updatedAt
-			WHERE transactionId = :transactionId
-		`, map[string]interface{}{
-			"transactionId":   transactionId,
-			"settledAmount":   existing.SettledAmount,
-			"settledCurrency": existing.SettledCurrency,
-			"accountAmount":   existing.AccountAmount,
-			"exchangeRate":    existing.ExchangeRate,
-			"merchant":        existing.Merchant,
-			"categoryId":      existing.CategoryId,
-			"description":     existing.Description,
-			"transactionAt":   existing.TransactionAt,
-			"updatedAt":       time.Now().Unix(),
-		})
-		if err != nil {
+	// Rebalance if amount changed
+	if needsRebalance {
+		if err = reverseFromBalance(dbTx, existing.AccountId, existing.AccountCurrency, existing.Type, oldAccountAmount, now); err != nil {
 			dbTx.Rollback()
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update transaction"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to reverse old balance"})
+			return
+		}
+		if err = applyToBalance(dbTx, existing.AccountId, existing.AccountCurrency, existing.Type, existing.AccountAmount, now); err != nil {
+			dbTx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to apply new balance"})
+			return
+		}
+	}
+
+	// Replace tags if tagNames was provided (even if empty — that clears all tags)
+	if req.TagNames != nil {
+		// Remove existing tag bindings
+		if _, err = dbTx.Exec(`DELETE FROM transaction_tags WHERE transactionId = ?`, transactionId); err != nil {
+			dbTx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to clear tags"})
 			return
 		}
 
-		if err := dbTx.Commit(); err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit"})
-			return
+		// Resolve and bind new tags
+		for _, tagName := range req.TagNames {
+			tagId, err := handlers.ResolveOrCreateTag(dbTx, existing.UserID, tagName)
+			if err != nil {
+				dbTx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to resolve tag: " + tagName})
+				return
+			}
+			if _, err = dbTx.Exec(
+				`INSERT INTO transaction_tags (transactionId, tagId) VALUES (?, ?)`,
+				transactionId, tagId,
+			); err != nil {
+				dbTx.Rollback()
+				ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to bind tag"})
+				return
+			}
 		}
-	} else {
-		// Simple update — no amount change, no balance recalculation needed
-		_, err = handler.dbInstance.NamedExec(`
-			UPDATE transactions SET
-				merchant = :merchant,
-				categoryId = :categoryId,
-				description = :description,
-				transactionAt = :transactionAt,
-				updatedAt = :updatedAt
-			WHERE transactionId = :transactionId
-		`, map[string]interface{}{
-			"transactionId": transactionId,
-			"merchant":      existing.Merchant,
-			"categoryId":    existing.CategoryId,
-			"description":   existing.Description,
-			"transactionAt": existing.TransactionAt,
-			"updatedAt":     time.Now().Unix(),
-		})
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update transaction"})
-			return
-		}
+	}
+
+	if err := dbTx.Commit(); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit"})
+		return
 	}
 
 	ctx.JSON(http.StatusOK, existing)

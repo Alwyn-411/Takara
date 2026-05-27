@@ -7,6 +7,7 @@ import { currencies, type Accounts } from '../../../types/Accounts';
 import { createAccount } from '../../../api/accounts';
 import { useUserStore } from '../../../store/User';
 import type { CreateResponse } from '../../../api/default';
+import { HomeOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -60,9 +61,13 @@ export const AccountCreate = () => {
 
     return (
         <Col span={24}>
-            <Row>
+            <Row justify="space-between" gutter={16} style={{ padding: 12 }}>
                 <Breadcrumb
                     items={[
+                        {
+                            href: '/home',
+                            title: <HomeOutlined />,
+                        },
                         {
                             title: 'Accounts',
                             href: '/accounts',

@@ -1,11 +1,12 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUserStore } from '../../../store/User';
-import { Breadcrumb, Button, Card, Row, Space, Statistic, Typography } from 'antd';
-import { EditOutlined, LeftOutlined, PlusCircleOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons';
+import { Breadcrumb, Button, Card, Row, Space, Statistic, Timeline, Typography } from 'antd';
+import { EditOutlined, HomeOutlined, LeftOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons';
 import { getAccountWithAccountId } from '../../../api/accounts';
 import { useQuery } from '@tanstack/react-query';
 import { currencies, type Accounts } from '../../../types/Accounts';
 import type { valueType } from 'antd/es/statistic/utils';
+import { listTransactionsByAccountId } from '../../../api/transactions';
 
 const { Title, Text } = Typography;
 
@@ -20,8 +21,26 @@ export const AccountDetails = () => {
         enabled: !!accountId && !!userId,
     });
 
-    const onEdit = () => {
-        navigate(`/accounts/${accountId}/edit`);
+    // listTransactionsByAccountId
+    const transactionsQuery = useQuery({
+        queryFn: () => listTransactionsByAccountId(accountId!!),
+        queryKey: ['listTransactions', accountId],
+        enabled: !!accountId && !!userId,
+    });
+
+    const timelineItems = transactionsQuery.data?.records.forEach((value) => {
+        return {
+            title: value.transactionAt,
+            content: `${value.settledAmount} ${value.type === 'Debit' ? 'Paid to' : 'Credited from'} ${value.merchant}`,
+        };
+    });
+
+    const EditAccount = () => {
+        navigate(`../../${accountId}/edit`, { relative: 'path' });
+    };
+
+    const AddTransaction = () => {
+        navigate(`../transactions/create`, { relative: 'path' });
     };
 
     const getAccountCurrency = (data: Accounts) => {
@@ -57,6 +76,10 @@ export const AccountDetails = () => {
                     <Breadcrumb
                         items={[
                             {
+                                href: '/home',
+                                title: <HomeOutlined />,
+                            },
+                            {
                                 title: 'Accounts',
                                 href: '/accounts',
                             },
@@ -77,21 +100,18 @@ export const AccountDetails = () => {
                         variant="borderless"
                         loading={isLoading}
                         title={
-                            <Title level={3} italic type="secondary">
-                                My Account Details
+                            <Title level={3} italic>
+                                {data.name}
                             </Title>
                         }
                         style={{ width: '100%' }}
-                        extra={<Button onClick={onEdit} icon={<EditOutlined />} />}
+                        extra={<Button onClick={EditAccount} type="link" icon={<EditOutlined />} />}
                     >
                         <Row justify="space-between" style={{ padding: 8 }}>
-                            <Statistic title="Bank Name" value={data.name} />
                             <Statistic title="Account Number" value={data.accountNumber} formatter={maskedCardNumber} />
                             <Statistic title="Account Type" value={data.type} />
                             <Statistic title="Currency" value={`${getAccountCurrency(data)?.value} - ${getAccountCurrency(data)?.symbol}`} />
                             {data.type === 'Savings' && <Statistic title="Interest" value={data.interest} suffix={'%'} />}
-                        </Row>
-                        <Row justify="space-between" style={{ padding: 8 }}>
                             <Statistic
                                 title="Balance Amount"
                                 value={data.balance}
@@ -103,6 +123,7 @@ export const AccountDetails = () => {
                                 }
                             />
                         </Row>
+                        <Row>{!!data.description && <Statistic title="Description" valueRender={() => <Text>{data.description}</Text>} />}</Row>
                     </Card>
                 </Row>
             )}
@@ -112,11 +133,13 @@ export const AccountDetails = () => {
                         <Text strong italic style={{ fontSize: 22 }}>
                             Transactions
                         </Text>
-                        <Button icon={<PlusOutlined />} color={'primary'}>
+                        <Button icon={<PlusOutlined />} type="primary" onClick={AddTransaction}>
                             Add
                         </Button>
                     </Row>
-                    <Row></Row>
+                    <Row>
+                        <Timeline mode="start" items={timelineItems ?? []} />
+                    </Row>
                 </>
             )}
         </>

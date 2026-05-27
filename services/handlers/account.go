@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"takara/services/middleware"
 	"takara/services/schema"
 	"time"
 
@@ -175,8 +176,12 @@ func (handler *AccountHandler) DeleteAccountById(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
 }
 
-func (handler *AccountHandler) GetAccountsByUserId(ctx *gin.Context) {
-	id := ctx.Param("userId")
+func (handler *AccountHandler) ListAccounts(ctx *gin.Context) {
+	clientId, ok := middleware.CurrentUserId(ctx)
+	if !ok {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 
 	query := `
 		SELECT userId, accountId, type, name, accountNumber, description, currency, interest, balance, active
@@ -186,7 +191,7 @@ func (handler *AccountHandler) GetAccountsByUserId(ctx *gin.Context) {
 	`
 
 	accounts := []schema.Account{}
-	err := handler.dbInstance.Select(&accounts, query, id, true)
+	err := handler.dbInstance.Select(&accounts, query, clientId, true)
 
 	if len(accounts) == 0 {
 		ctx.AbortWithStatus(http.StatusNoContent)

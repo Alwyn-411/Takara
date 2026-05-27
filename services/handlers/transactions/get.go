@@ -8,125 +8,116 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type MerchantInfo struct {
+	MerchantId   string `db:"merchantId" json:"merchantId"`
+	MerchantName string `db:"merchantName" json:"merchantName"`
+}
+
+type CategoryInfo struct {
+	CategoryId   string `db:"categoryId" json:"categoryId"`
+	CategoryName string `db:"categoryName" json:"categoryName"`
+}
+
 type TransactionResponse struct {
 	schema.Transaction
-	Tags []schema.Tag `json:"tags"`
+	Merchant *MerchantInfo `json:"merchant,omitempty"`
+	Category *CategoryInfo `json:"category,omitempty"`
+	Tags     []schema.Tag  `json:"tags"`
 }
 
 func (handler *TransactionsHandler) GetTransactionById(ctx *gin.Context) {
-	/*
-		1. Fetch Data from DB with transactionId
-		2. Fetch Tags from DB related to this transaction
-	*/
 	transactionId := ctx.Param("transactionId")
 
-	query := `
+	tx := schema.Transaction{}
+	if err := handler.dbInstance.Get(&tx, `
 		SELECT transactionId, userId, accountId, type,
 			settledAmount, settledCurrency,
 			accountAmount, accountCurrency,
-			exchangeRate, merchant, categoryId,
+			exchangeRate, merchantId, categoryId,
 			description, transactionAt, active,
 			createdAt, updatedAt
 		FROM transactions
 		WHERE transactionId = ? AND active = 1
-	`
-
-	tx := schema.Transaction{}
-	err := handler.dbInstance.Get(&tx, query, transactionId)
-	if err == sql.ErrNoRows {
+	`, transactionId); err == sql.ErrNoRows {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "transaction not found"})
 		return
-	}
-	if err != nil {
+	} else if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Fetch associated tags
-	tags := []schema.Tag{}
-	handler.dbInstance.Select(&tags, `
+	resp := TransactionResponse{Transaction: tx, Tags: []schema.Tag{}}
+
+	// Resolve merchant name
+	if tx.MerchantId != "" {
+		var m MerchantInfo
+		if err := handler.dbInstance.Get(&m, `
+			SELECT merchantId, merchantName FROM merchants WHERE merchantId = ?
+		`, tx.MerchantId); err == nil {
+			resp.Merchant = &m
+		}
+	}
+
+	// Resolve category name
+	if tx.CategoryId != "" {
+		var c CategoryInfo
+		if err := handler.dbInstance.Get(&c, `
+			SELECT categoryId, categoryName FROM categories WHERE categoryId = ?
+		`, tx.CategoryId); err == nil {
+			resp.Category = &c
+		}
+	}
+
+	// Fetch tags
+	if err := handler.dbInstance.Select(&resp.Tags, `
 		SELECT t.tagId, t.tagName, t.userId, t.active, t.createdAt, t.updatedAt
 		FROM tags t
 		JOIN transaction_tags tt ON t.tagId = tt.tagId
 		WHERE tt.transactionId = ?
-	`, transactionId)
-
-	response := TransactionResponse{
-		Transaction: tx,
-		Tags:        tags,
+	`, transactionId); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	ctx.JSON(http.StatusOK, resp)
+}
+
+type TransactionListItem struct {
+	schema.Transaction
+	MerchantName string `db:"merchantName" json:"merchantName"`
+	CategoryName string `db:"categoryName" json:"categoryName"`
 }
 
 func (handler *TransactionsHandler) GetTransactionsByAccountId(ctx *gin.Context) {
 	accountId := ctx.Param("accountId")
-	limit := ctx.Param("limit")
-	offset := ctx.Param("offset")
+	limit := ctx.DefaultQuery("limit", "20")
+	offset := ctx.DefaultQuery("offset", "0")
 
-	query := `
-		SELECT transactionId, userId, accountId, type,
-			settledAmount, settledCurrency,
-			accountAmount, accountCurrency,
-			exchangeRate, merchant, categoryId,
-			description, transactionAt, active,
-			createdAt, updatedAt
-		FROM transactions
-		WHERE accountId = ? AND active = 1
-		ORDER BY transactionAt DESC
+	// Use LEFT JOINs so we get merchant/category names in one query
+	transactions := []TransactionListItem{}
+	if err := handler.dbInstance.Select(&transactions, `
+		SELECT
+			t.transactionId, t.userId, t.accountId, t.type,
+			t.settledAmount, t.settledCurrency,
+			t.accountAmount, t.accountCurrency,
+			t.exchangeRate, t.merchantId, t.categoryId,
+			t.description, t.transactionAt, t.active,
+			t.createdAt, t.updatedAt,
+			COALESCE(m.merchantName, '') AS merchantName,
+			COALESCE(c.categoryName, '') AS categoryName
+		FROM transactions t
+		LEFT JOIN merchants m ON t.merchantId = m.merchantId
+		LEFT JOIN categories c ON t.categoryId = c.categoryId
+		WHERE t.accountId = ? AND t.active = 1
+		ORDER BY t.transactionAt DESC
 		LIMIT ? OFFSET ?
-	`
-
-	transactions := []schema.Transaction{}
-	err := handler.dbInstance.Select(&transactions, query, accountId, limit, offset)
-	if err != nil {
+	`, accountId, limit, offset); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	if len(transactions) == 0 {
-		ctx.JSON(http.StatusOK, schema.ListResponse[schema.Transaction]{Count: 0, Records: []schema.Transaction{}})
-		return
-	}
 
-	response := schema.ListResponse[schema.Transaction]{
+	ctx.JSON(http.StatusOK, schema.ListResponse[TransactionListItem]{
 		Count:   len(transactions),
 		Records: transactions,
-	}
-	ctx.JSON(http.StatusOK, response)
+	})
 }
-
-/*	TODO: This might not be needed :: Think about it
-	func (handler *TransactionsHandler) GetTransactionsByUserId(ctx *gin.Context) {
-		userId := ctx.Param("userId")
-
-		query := `
-			SELECT transactionId, userId, accountId, type,
-				settledAmount, settledCurrency,
-				accountAmount, accountCurrency,
-				exchangeRate, merchant, categoryId,
-				description, transactionAt, active,
-				createdAt, updatedAt
-			FROM transactions
-			WHERE userId = ? AND active = 1
-			ORDER BY transactionAt DESC
-			LIMIT 50
-		`
-
-		transactions := []schema.Transaction{}
-		err := handler.dbInstance.Select(&transactions, query, userId)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
-		if len(transactions) == 0 {
-			ctx.JSON(http.StatusOK, schema.ListResponse[schema.Transaction]{Count: 0, Records: []schema.Transaction{}})
-			return
-		}
-
-		response := schema.ListResponse[schema.Transaction]{
-			Count:   len(transactions),
-			Records: transactions,
-		}
-		ctx.JSON(http.StatusOK, response)
-	}
-*/

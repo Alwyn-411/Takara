@@ -22,7 +22,7 @@ type Transaction struct {
 
 	ExchangeRate string `db:"exchangeRate" json:"exchangeRate"` // Conversion rate at transaction time
 
-	Merchant      string `db:"merchant" json:"merchant"` // Name of the Merchant
+	MerchantId    string `db:"merchantId" json:"merchantId"` // Name of the MerchantId
 	CategoryId    string `db:"categoryId" json:"categoryId"`
 	Description   string `db:"description" json:"description,omitempty"`
 	TransactionAt int64  `db:"transactionAt" json:"transactionAt"` // Transaction Timestamp
@@ -51,7 +51,7 @@ func InitTransactions(db *sqlx.DB) {
 			accountCurrency TEXT NOT NULL,
 			exchangeRate TEXT DEFAULT '1',
  
-			merchant TEXT NOT NULL,
+			merchantId TEXT,
 			categoryId TEXT,
 			description TEXT,
 			transactionAt INTEGER NOT NULL,
@@ -62,6 +62,7 @@ func InitTransactions(db *sqlx.DB) {
 			FOREIGN KEY(userId) REFERENCES users(userId) ON DELETE CASCADE,
 			FOREIGN KEY(accountId) REFERENCES accounts(accountId) ON DELETE CASCADE,
 			FOREIGN KEY(categoryId) REFERENCES categories(categoryId) ON DELETE SET NULL
+			FOREIGN KEY(merchantId) REFERENCES merchants(merchantId) ON DELETE SET NULL
 		);
 	`
 
@@ -93,8 +94,8 @@ func InitIndexTransactions(db *sqlx.DB) {
 		CREATE INDEX IF NOT EXISTS idx_transactions_category
 			ON transactions(userId, categoryId);
  
-		CREATE INDEX IF NOT EXISTS idx_transactions_merchant
-			ON transactions(userId, merchant);
+		CREATE INDEX IF NOT EXISTS idx_transactions_merchantId
+			ON transactions(userId, merchantId);
  
 		CREATE INDEX IF NOT EXISTS idx_transaction_tags_tag
 			ON transaction_tags(tagId);

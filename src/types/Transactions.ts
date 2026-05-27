@@ -1,12 +1,12 @@
 import type { Base, Timestamp } from './Common';
 
-const TransactionDirection = { Debit: 'Debit', Credit: 'Credit' } as const;
-export type TransactionType = (typeof TransactionDirection)[keyof typeof TransactionDirection];
+export const TransactionType = { Debit: 'Debit', Credit: 'Credit' } as const;
+export type TransactionDataType = (typeof TransactionType)[keyof typeof TransactionType];
 
 export interface Transaction extends Base, Timestamp {
     accountId: string;
     transactionId: string;
-    type: TransactionType;
+    type: TransactionDataType;
 
     settledAmount: string;
     settledCurrency: string;
@@ -16,6 +16,22 @@ export interface Transaction extends Base, Timestamp {
     exchangeRate: string;
     merchant: string;
     category: string;
+    tags: string[];
     description: string;
-    TransactionAt: number;
+    transactionAt: number;
+}
+
+export interface Merchant extends Base, Timestamp {
+    merchantId: string;
+    merchantName: string;
+}
+
+export interface Category extends Base, Timestamp {
+    categoryId: string;
+    categoryName: string;
+}
+
+export interface Tag extends Base, Timestamp {
+    tagId: string;
+    tagName: string;
 }

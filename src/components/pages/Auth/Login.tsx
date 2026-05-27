@@ -19,6 +19,8 @@ export const Login = () => {
     const navigate = useNavigate();
 
     const updateUser = useUserStore((s) => s.updateUser);
+    const setToken = useUserStore((s) => s.setToken);
+
     const { mutate } = useMutation({
         mutationFn: async (values: FormFields) => {
             const auth = await AuthUser({
@@ -26,6 +28,9 @@ export const Login = () => {
                 password: values.password,
                 remember: values.remember,
             });
+
+            setToken(auth.token);
+
             const user = await getUser(auth.id);
             return user;
         },

@@ -6,6 +6,7 @@ import { currencies, type Accounts } from '../../../types/Accounts';
 import { useUserStore } from '../../../store/User';
 import { options, type Formfields } from './Create';
 import { useEffect } from 'react';
+import { HomeOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -68,9 +69,13 @@ export const AccountEdit = () => {
 
     return (
         <Col span={24}>
-            <Row>
+            <Row justify="space-between" gutter={16} style={{ padding: 12 }}>
                 <Breadcrumb
                     items={[
+                        {
+                            href: '/home',
+                            title: <HomeOutlined />,
+                        },
                         {
                             title: 'Accounts',
                             href: '/accounts',

@@ -15,7 +15,7 @@ export const Accounts = () => {
 
     const { data, refetch, isLoading, isSuccess } = useQuery({
         queryKey: ['accounts', userId],
-        queryFn: () => listAccountsWithUserId(userId!!),
+        queryFn: listAccountsWithUserId,
         enabled: !!userId,
     });
 
@@ -71,7 +71,7 @@ export const Accounts = () => {
                     <Button
                         type="link"
                         onClick={() => {
-                            navigate(`/accounts/${record.accountId}/details`);
+                            navigate(`./${record.accountId}/details`);
                         }}
                     >
                         View
@@ -103,7 +103,7 @@ export const Accounts = () => {
                         <Button
                             type="primary"
                             onClick={() => {
-                                navigate('/accounts/create');
+                                navigate('./create');
                             }}
                         >
                             Create Bank Account
@@ -125,7 +125,7 @@ export const Accounts = () => {
                                         <Button
                                             type="primary"
                                             onClick={() => {
-                                                navigate('/accounts/create');
+                                                navigate('./create');
                                             }}
                                         >
                                             Create Bank Account
