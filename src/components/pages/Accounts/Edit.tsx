@@ -1,11 +1,12 @@
 import { Alert, Breadcrumb, Button, Card, Col, Form, Input, InputNumber, message, Radio, Row, Select, Typography, type FormProps } from 'antd';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { editAccountWithAccountId, getAccountWithAccountId } from '../../../hooks/accounts';
-import { currencies } from '../../../types/Accounts';
+import { editAccountWithAccountId, getAccountWithAccountId } from '../../../api/accounts';
+import { currencies, type Accounts } from '../../../types/Accounts';
 import { useUserStore } from '../../../store/User';
-import { options, type Formfields } from './AccountCreate';
+import { options, type Formfields } from './Create';
 import { useEffect } from 'react';
+import { HomeOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -38,7 +39,7 @@ export const AccountEdit = () => {
     const currencyObj = currencies.find((c) => c.value === selectedCurrency);
 
     const onFinish: FormProps<Formfields>['onFinish'] = (values) => {
-        const AccountData: Formfields = {
+        const AccountData: Partial<Accounts> = {
             accountId: accountId!!,
             type: values.type,
             name: values.name,
@@ -48,11 +49,15 @@ export const AccountEdit = () => {
         };
 
         if (!!values.currency) {
-            AccountData.balance = values.balance;
+            AccountData.balance = values.balance?.toString();
         }
 
         if (values.type === 'Savings') {
-            AccountData.interest = values.interest;
+            AccountData.interest = values.interest?.toString();
+        }
+
+        if (values.type === 'Current') {
+            AccountData.interest = '0';
         }
 
         mutate({ accountId: accountId!!, account: AccountData });
@@ -64,9 +69,13 @@ export const AccountEdit = () => {
 
     return (
         <Col span={24}>
-            <Row>
+            <Row justify="space-between" gutter={16} style={{ padding: 12 }}>
                 <Breadcrumb
                     items={[
+                        {
+                            href: '/home',
+                            title: <HomeOutlined />,
+                        },
                         {
                             title: 'Accounts',
                             href: '/accounts',

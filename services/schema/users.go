@@ -34,3 +34,7 @@ func InitUsers(dbInstance *sqlx.DB) {
 
 	dbInstance.MustExec(create)
 }
+
+func InitIndexUsers(db *sqlx.DB) {
+	db.MustExec(`CREATE INDEX IF NOT EXISTS idx_accounts_user ON accounts(userId);`)
+}

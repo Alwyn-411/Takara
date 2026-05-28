@@ -1,0 +1,157 @@
+package handlers
+
+import (
+	"database/sql"
+	"fmt"
+	"net/http"
+	"strings"
+	"takara/services/middleware"
+	"takara/services/schema"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
+)
+
+type TagsHandler struct {
+	dbInstance *sqlx.DB
+}
+
+func NewTagsHandler(db *sqlx.DB) *TagsHandler {
+	return &TagsHandler{dbInstance: db}
+}
+
+func (handler *TagsHandler) ListTags(ctx *gin.Context) {
+	userId, ok := middleware.CurrentUserId(ctx)
+	if !ok {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	term := ctx.Query("q")
+
+	tags := []schema.Tag{}
+	var err error
+
+	if term != "" {
+		err = handler.dbInstance.Select(&tags,
+			`SELECT userId, tagId, tagName, active, createdAt, updatedAt
+		 FROM tags WHERE userId = ? AND active = 1 AND tagName LIKE ? LIMIT 20`, userId, "%"+term+"%")
+	} else {
+		err = handler.dbInstance.Select(&tags,
+			`SELECT userId, tagId, tagName, active, createdAt, updatedAt
+		 FROM tags WHERE userId = ? AND active = 1 LIMIT 20`, userId)
+	}
+	if err != nil {
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, schema.ListResponse[schema.Tag]{
+		Count:   len(tags),
+		Records: tags,
+	})
+}
+
+type AddTagsRequest struct {
+	TagIds []string `json:"tagIds" binding:"required"`
+}
+
+func (handler *TagsHandler) AddTagsToTransaction(ctx *gin.Context) {
+	transactionId := ctx.Param("transactionId")
+
+	var req AddTagsRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	dbTx, err := handler.dbInstance.Beginx()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to start db transaction"})
+		return
+	}
+
+	for _, tagId := range req.TagIds {
+		if _, err := dbTx.Exec(
+			`INSERT OR IGNORE INTO transaction_tags (transactionId, tagId) VALUES (?, ?)`,
+			transactionId, tagId,
+		); err != nil {
+			dbTx.Rollback()
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add tag: " + tagId})
+			return
+		}
+	}
+
+	if err := dbTx.Commit(); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to commit"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+}
+
+func (handler *TagsHandler) RemoveTagFromTransaction(ctx *gin.Context) {
+	transactionId := ctx.Param("transactionId")
+	tagId := ctx.Param("tagId")
+
+	if _, err := handler.dbInstance.Exec(
+		`DELETE FROM transaction_tags WHERE transactionId = ? AND tagId = ?`,
+		transactionId, tagId,
+	); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove tag"})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+}
+
+func (handler *TagsHandler) GetTagsForTransaction(ctx *gin.Context) {
+	transactionId := ctx.Param("transactionId")
+
+	tags := []schema.Tag{}
+	if err := handler.dbInstance.Select(&tags, `
+		SELECT t.tagId, t.tagName, t.userId, t.active, t.createdAt, t.updatedAt
+		FROM tags t
+		JOIN transaction_tags tt ON t.tagId = tt.tagId
+		WHERE tt.transactionId = ?
+	`, transactionId); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, schema.ListResponse[schema.Tag]{
+		Count:   len(tags),
+		Records: tags,
+	})
+}
+
+func ResolveOrCreateTag(dbTx *sqlx.Tx, userId, name string) (string, error) {
+	name = strings.TrimSpace(name)
+
+	if name == "" {
+		return "", nil
+	}
+
+	var id string
+	err := dbTx.Get(&id,
+		`SELECT tagId FROM tags WHERE userId = ? AND tagName = ? AND active = 1`,
+		userId, name,
+	)
+	if err == nil {
+		return id, nil
+	}
+	if err != sql.ErrNoRows {
+		return "", fmt.Errorf("lookup tag: %w", err)
+	}
+
+	id = uuid.New().String()
+	_, err = dbTx.Exec(
+		`INSERT INTO tags (tagId, userId, tagName) VALUES (?, ?, ?)`,
+		id, userId, name,
+	)
+	if err != nil {
+		return "", fmt.Errorf("create tag: %w", err)
+	}
+	return id, nil
+}

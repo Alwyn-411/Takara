@@ -1,52 +1,52 @@
-import { ConfigProvider, theme } from "antd";
-import type { ThemeConfig } from "antd";
-import { BrowserRouter } from "react-router-dom";
-import { Router } from "./router/Router";
+import { ConfigProvider, theme } from 'antd';
+import type { ThemeConfig } from 'antd';
+import { BrowserRouter } from 'react-router-dom';
+import { Router } from './router/Router';
 
 const appTheme: ThemeConfig = {
-  algorithm: theme.defaultAlgorithm,
+    algorithm: theme.defaultAlgorithm,
 
-  token: {
-    colorPrimary: "#1677ff",
+    token: {
+        colorPrimary: '#1677ff',
 
-    borderRadius: 10,
+        borderRadius: 10,
 
-    colorBgLayout: "#f5f7fa",
-    colorBgContainer: "#ffffff",
+        colorBgLayout: '#f5f7fa',
+        colorBgContainer: '#ffffff',
 
-    colorText: "#262626",
-    colorTextSecondary: "#595959",
+        colorText: '#262626',
+        colorTextSecondary: '#595959',
 
-    fontSize: 14,
-    fontFamily: "Inter, system-ui, sans-serif",
-  },
-
-  components: {
-    Layout: {
-      headerBg: "#ffffff",
-      siderBg: "#ffffff",
-      bodyBg: "#f5f7fa",
+        fontSize: 14,
+        fontFamily: 'Inter, system-ui, sans-serif',
     },
 
-    Menu: {
-      itemBorderRadius: 8,
-      itemHeight: 42,
-    },
+    components: {
+        Layout: {
+            headerBg: '#ffffff',
+            siderBg: '#ffffff',
+            bodyBg: '#f5f7fa',
+        },
 
-    Card: {
-      borderRadiusLG: 14,
+        Menu: {
+            itemBorderRadius: 8,
+            itemHeight: 42,
+        },
+
+        Card: {
+            borderRadiusLG: 14,
+        },
     },
-  },
 };
 
 function App() {
-  return (
-    <ConfigProvider theme={appTheme}>
-      <BrowserRouter>
-        <Router />
-      </BrowserRouter>
-    </ConfigProvider>
-  );
+    return (
+        <ConfigProvider theme={appTheme}>
+            <BrowserRouter>
+                <Router />
+            </BrowserRouter>
+        </ConfigProvider>
+    );
 }
 
 export default App;

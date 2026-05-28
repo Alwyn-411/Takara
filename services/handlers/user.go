@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -14,7 +13,25 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-func GetUserById(ctx *gin.Context, dbInstance *sqlx.DB) {
+type UserHandler struct {
+	dbInstance *sqlx.DB
+}
+
+func NewUserHandler(db *sqlx.DB) *UserHandler {
+	return &UserHandler{
+		dbInstance: db,
+	}
+}
+
+type UpdateUserRequest struct {
+	UserName *string `json:"userName"`
+	AltName  *string `json:"altName"`
+	Email    *string `json:"email"`
+	AltEmail *string `json:"altEmail"`
+	Password *string `json:"password"`
+}
+
+func (handler *UserHandler) GetUserById(ctx *gin.Context) {
 	id := ctx.Param("id")
 
 	query := `
@@ -27,7 +44,7 @@ func GetUserById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	`
 
 	var user schema.User
-	err := dbInstance.Get(&user, query, id, true)
+	err := handler.dbInstance.Get(&user, query, id, true)
 
 	if err == sql.ErrNoRows {
 		ctx.AbortWithError(http.StatusNotFound, sql.ErrNoRows)
@@ -42,7 +59,7 @@ func GetUserById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	ctx.JSON(http.StatusOK, user)
 }
 
-func CreateUser(ctx *gin.Context, dbInstance *sqlx.DB) {
+func (handler *UserHandler) CreateUser(ctx *gin.Context) {
 	id := uuid.New().String()
 
 	var data schema.User
@@ -77,7 +94,7 @@ func CreateUser(ctx *gin.Context, dbInstance *sqlx.DB) {
 		)
 	`
 
-	_, err = dbInstance.NamedExec(insertQuery, data)
+	_, err = handler.dbInstance.NamedExec(insertQuery, data)
 	if err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed") {
 			ctx.AbortWithStatusJSON(http.StatusConflict, gin.H{
@@ -97,76 +114,54 @@ func CreateUser(ctx *gin.Context, dbInstance *sqlx.DB) {
 	})
 }
 
-func UpdateUserById(ctx *gin.Context, dbInstance *sqlx.DB) {
-	id := ctx.Param("id")
+func (handler *UserHandler) UpdateUserById(ctx *gin.Context) {
+	userId := ctx.Param("id")
 
-	var data map[string]any
+	var req UpdateUserRequest
 
-	err := ctx.ShouldBindJSON(&data)
-	if err != nil {
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	set := []string{}
-	args := []any{}
+	var hashedPassword *string
 
-	allowedFields := map[string]bool{
-		"userName": true,
-		"altName":  true,
-		"email":    true,
-		"altEmail": true,
-		"password": true,
-	}
-
-	for key, value := range data {
-		if !allowedFields[key] {
-			continue
+	if req.Password != nil {
+		hash, err := HashPassword(*req.Password)
+		if err != nil {
+			ctx.AbortWithStatus(http.StatusInternalServerError)
+			return
 		}
 
-		if key == "password" {
-			password, ok := value.(string)
-			if !ok {
-				ctx.AbortWithStatusJSON(http.StatusUnprocessableEntity, gin.H{
-					"error": "invalid password",
-				})
-				return
-			}
-
-			hashedPassword, err := HashPassword(password)
-			if err != nil {
-				ctx.AbortWithStatus(http.StatusInternalServerError)
-				return
-			}
-
-			value = string(hashedPassword)
-		}
-
-		set = append(set, fmt.Sprintf("%s = ?", key))
-		args = append(args, value)
+		hashStr := string(hash)
+		hashedPassword = &hashStr
 	}
 
-	if len(set) == 0 {
-		ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"error": "no valid fields provided",
-		})
-		return
-	}
-
-	set = append(set, "updatedAt = ?")
-	args = append(args, time.Now().Unix())
-
-	args = append(args, id)
-
-	query := fmt.Sprintf(`
+	query := `
 		UPDATE users
-		SET %s
-		WHERE userId = ?
-	`, strings.Join(set, ", "))
+		SET userName = COALESCE(:userName, userName),
+			altName = COALESCE(:altName, altName),
+			email = COALESCE(:email, email),
+			altEmail = COALESCE(:altEmail, altEmail),
+			password = COALESCE(:password, password),
+			updatedAt = :updatedAt
+		WHERE userId = :userId
+	`
 
-	result, err := dbInstance.Exec(query, args...)
+	params := gin.H{
+		"userId":    userId,
+		"updatedAt": time.Now().Unix(),
+
+		"userName": req.UserName,
+		"altName":  req.AltName,
+		"email":    req.Email,
+		"altEmail": req.AltEmail,
+		"password": hashedPassword,
+	}
+
+	result, err := handler.dbInstance.NamedExec(query, params)
 	if err != nil {
 		ctx.AbortWithStatus(http.StatusInternalServerError)
 		return
@@ -180,7 +175,10 @@ func UpdateUserById(ctx *gin.Context, dbInstance *sqlx.DB) {
 
 	if rows == 0 {
 		ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{
-			"error": fmt.Sprintf("user with userId = %s does not exist", id),
+			"error": fmt.Sprintf(
+				"user with userId=%s does not exist",
+				userId,
+			),
 		})
 		return
 	}
@@ -190,18 +188,19 @@ func UpdateUserById(ctx *gin.Context, dbInstance *sqlx.DB) {
 	})
 }
 
-func DeleteUserById(ctx *gin.Context, dbInstance *sqlx.DB) {
+func (handler *UserHandler) DeleteUserById(ctx *gin.Context) {
 	id := ctx.Param("id")
 
 	query := `
 		UPDATE users
-		SET active = :active
+		SET active = :active, updatedAt = :updatedAt
 		WHERE userId = :userId
 	`
 
-	result, err := dbInstance.NamedExec(query, gin.H{
-		"userId": id,
-		"active": false,
+	result, err := handler.dbInstance.NamedExec(query, gin.H{
+		"userId":    id,
+		"active":    0,
+		"updatedAt": time.Now().Unix(),
 	})
 
 	if err != nil {
@@ -222,41 +221,5 @@ func DeleteUserById(ctx *gin.Context, dbInstance *sqlx.DB) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "success",
-	})
-}
-
-func AuthorizeUserWithUserNameAndPassword(ctx *gin.Context, dbInstance *sqlx.DB) {
-	enteredUserName := ctx.Query("userName")
-	enteredUserPassword := ctx.Query("password")
-
-	query := `
-		SELECT 
-			userId, userName, password
-		FROM users
-		WHERE userName = ?
-	`
-
-	var user schema.User
-
-	err := dbInstance.Get(&user, query, enteredUserName)
-
-	if errors.Is(err, sql.ErrNoRows) {
-		ctx.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	err = CheckPassword(user.Password, enteredUserPassword)
-	if err != nil {
-		ctx.AbortWithError(http.StatusUnauthorized, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"id": user.UserID,
 	})
 }

@@ -4,12 +4,12 @@ import "github.com/jmoiron/sqlx"
 
 type Base struct {
 	UserID string `db:"userId" json:"userId"`
-	Active int    `db:"active" json:"active"` // SQLite: 0 or 1
+	Active int    `db:"active" json:"active,omitempty"` // SQLite: 0 or 1
 }
 
 type Timestamp struct {
-	CreatedAt int64 `db:"createdAt" json:"createdAt"`
-	UpdatedAt int64 `db:"updatedAt" json:"updatedAt"`
+	CreatedAt int64 `db:"createdAt" json:"createdAt,omitempty"`
+	UpdatedAt int64 `db:"updatedAt" json:"updatedAt,omitempty"`
 }
 
 type ListResponse[T any] struct {
