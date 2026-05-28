@@ -1,12 +1,13 @@
 import { useNavigate, useParams } from 'react-router-dom';
 import { useUserStore } from '../../../store/User';
-import { Breadcrumb, Button, Card, Row, Space, Statistic, Timeline, Typography } from 'antd';
-import { EditOutlined, HomeOutlined, LeftOutlined, PlusOutlined, RightOutlined } from '@ant-design/icons';
+import { Alert, Breadcrumb, Button, Card, message, Popconfirm, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
+import type { TableColumnsType } from 'antd';
+import { DeleteOutlined, EditOutlined, HomeOutlined, LeftOutlined, PlusOutlined, RightOutlined, SyncOutlined } from '@ant-design/icons';
 import { getAccountWithAccountId } from '../../../api/accounts';
-import { useQuery } from '@tanstack/react-query';
-import { currencies, type Accounts } from '../../../types/Accounts';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { currencies } from '../../../types/Accounts';
 import type { valueType } from 'antd/es/statistic/utils';
-import { listTransactionsByAccountId } from '../../../api/transactions';
+import { deleteTransactionWithTransactionId, listTransactionsByAccountId } from '../../../api/transactions';
 
 const { Title, Text } = Typography;
 
@@ -15,25 +16,90 @@ export const AccountDetails = () => {
     const { userId } = useUserStore();
     const navigate = useNavigate();
 
-    const { data, isLoading, isSuccess } = useQuery({
+    const accountsQuery = useQuery({
         queryFn: () => getAccountWithAccountId(accountId!!),
         queryKey: ['accounts', accountId],
         enabled: !!accountId && !!userId,
     });
 
-    // listTransactionsByAccountId
     const transactionsQuery = useQuery({
         queryFn: () => listTransactionsByAccountId(accountId!!),
         queryKey: ['listTransactions', accountId],
         enabled: !!accountId && !!userId,
     });
 
-    const timelineItems = transactionsQuery.data?.records.forEach((value) => {
-        return {
-            title: value.transactionAt,
-            content: `${value.settledAmount} ${value.type === 'Debit' ? 'Paid to' : 'Credited from'} ${value.merchant}`,
-        };
+    const { mutate, isError } = useMutation({
+        mutationFn: deleteTransactionWithTransactionId,
+        onSuccess: () => {
+            message.success('Deleted Successfully');
+            transactionsQuery.refetch();
+            accountsQuery.refetch();
+        },
     });
+
+    const records = transactionsQuery.data?.records ?? [];
+
+    const columns: TableColumnsType<(typeof records)[number]> = [
+        {
+            title: 'Date',
+            dataIndex: 'transactionAt',
+            key: 'transactionAt',
+            defaultSortOrder: 'descend',
+            sorter: (a, b) => a.transactionAt - b.transactionAt,
+            render: (ts: number) => new Date(ts * 1000).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+        },
+        {
+            title: 'Merchant',
+            dataIndex: 'merchantName',
+            key: 'merchantName',
+            render: (name: string) => name || 'Unknown',
+        },
+        {
+            title: 'Type',
+            dataIndex: 'type',
+            key: 'type',
+            filters: [
+                { text: 'Debit', value: 'Debit' },
+                { text: 'Credit', value: 'Credit' },
+            ],
+            onFilter: (value, record) => record.type === value,
+            render: (type: string) => <Tag color={type === 'Debit' ? 'red' : 'green'}>{type}</Tag>,
+        },
+        {
+            title: 'Amount',
+            dataIndex: 'settledAmount',
+            key: 'settledAmount',
+            align: 'right',
+            sorter: (a, b) => Number(a.settledAmount) - Number(b.settledAmount),
+            render: (amount: string, record) => {
+                const isDebit = record.type === 'Debit';
+                const symbol = getAccountCurrency(record.settledCurrency)?.symbol;
+                return (
+                    <Text type={isDebit ? 'danger' : 'success'} strong>
+                        {isDebit ? '-' : '+'}
+                        {symbol}
+                        {amount}
+                    </Text>
+                );
+            },
+        },
+        {
+            title: 'Actions',
+            dataIndex: '',
+            key: 'actions',
+            align: 'right',
+            render: (_, record) => {
+                return (
+                    <Space>
+                        <Button type="link">View</Button>
+                        <Popconfirm title="Are you sure ?" okText="Yes" cancelText="No" onConfirm={() => mutate(record.transactionId)}>
+                            <Button type="link" icon={<DeleteOutlined />} />
+                        </Popconfirm>
+                    </Space>
+                );
+            },
+        },
+    ];
 
     const EditAccount = () => {
         navigate(`../../${accountId}/edit`, { relative: 'path' });
@@ -43,11 +109,11 @@ export const AccountDetails = () => {
         navigate(`../transactions/create`, { relative: 'path' });
     };
 
-    const getAccountCurrency = (data: Accounts) => {
+    function getAccountCurrency(currency: string) {
         return currencies.find(({ value }) => {
-            return value === data.currency;
+            return value === currency;
         });
-    };
+    }
 
     // const unmaskedCardNumber = (value: valueType) => {
     //     if (!value) return 'N/A';
@@ -94,51 +160,78 @@ export const AccountDetails = () => {
                     <Button icon={<RightOutlined />} />
                 </Space>
             </Row>
-            {isSuccess && !!data && (
+            {accountsQuery.isSuccess && !!accountsQuery.data && (
                 <Row gutter={16} style={{ padding: 12 }}>
                     <Card
                         variant="borderless"
-                        loading={isLoading}
+                        loading={accountsQuery.isLoading}
                         title={
                             <Title level={3} italic>
-                                {data.name}
+                                {accountsQuery.data.name}
                             </Title>
                         }
                         style={{ width: '100%' }}
                         extra={<Button onClick={EditAccount} type="link" icon={<EditOutlined />} />}
                     >
                         <Row justify="space-between" style={{ padding: 8 }}>
-                            <Statistic title="Account Number" value={data.accountNumber} formatter={maskedCardNumber} />
-                            <Statistic title="Account Type" value={data.type} />
-                            <Statistic title="Currency" value={`${getAccountCurrency(data)?.value} - ${getAccountCurrency(data)?.symbol}`} />
-                            {data.type === 'Savings' && <Statistic title="Interest" value={data.interest} suffix={'%'} />}
+                            <Statistic title="Account Number" value={accountsQuery.data.accountNumber} formatter={maskedCardNumber} />
+                            <Statistic title="Account Type" value={accountsQuery.data.type} />
+                            <Statistic
+                                title="Currency"
+                                value={`${getAccountCurrency(accountsQuery.data.currency)?.value} - ${getAccountCurrency(accountsQuery.data.currency)?.symbol}`}
+                            />
+                            {accountsQuery.data.type === 'Savings' && <Statistic title="Interest" value={accountsQuery.data.interest} suffix={'%'} />}
                             <Statistic
                                 title="Balance Amount"
-                                value={data.balance}
-                                prefix={getAccountCurrency(data)?.symbol}
+                                value={accountsQuery.data.balance}
+                                prefix={getAccountCurrency(accountsQuery.data.currency)?.symbol}
                                 suffix={
                                     <Text style={{ fontSize: 20 }} italic>
-                                        {getAccountCurrency(data)?.value}
+                                        {getAccountCurrency(accountsQuery.data.currency)?.value}
                                     </Text>
                                 }
                             />
                         </Row>
-                        <Row>{!!data.description && <Statistic title="Description" valueRender={() => <Text>{data.description}</Text>} />}</Row>
+                        <Row>
+                            {!!accountsQuery.data.description && (
+                                <Statistic title="Description" valueRender={() => <Text>{accountsQuery.data.description}</Text>} />
+                            )}
+                        </Row>
                     </Card>
                 </Row>
             )}
-            {isSuccess && !!data && (
+            {isError && (
+                <Alert
+                    title="Account Edit Failed"
+                    description={<Text>Error occured while processing this request</Text>}
+                    type="error"
+                    showIcon
+                    style={{ padding: 12 }}
+                />
+            )}
+            {accountsQuery.isSuccess && !!accountsQuery.data && (
                 <>
                     <Row justify="space-between" gutter={16} style={{ padding: 12 }}>
                         <Text strong italic style={{ fontSize: 22 }}>
-                            Transactions
+                            All Transactions
                         </Text>
-                        <Button icon={<PlusOutlined />} type="primary" onClick={AddTransaction}>
-                            Add
-                        </Button>
+                        <Space>
+                            <Button icon={<SyncOutlined />}>Sync</Button>
+                            <Button icon={<PlusOutlined />} type="primary" onClick={AddTransaction}>
+                                Add
+                            </Button>
+                        </Space>
                     </Row>
-                    <Row>
-                        <Timeline mode="start" items={timelineItems ?? []} />
+
+                    <Row gutter={16} style={{ padding: 12 }}>
+                        <Table
+                            rowKey="transactionId"
+                            columns={columns}
+                            dataSource={records}
+                            loading={transactionsQuery.isLoading}
+                            pagination={{ pageSize: 20, placement: ['bottomCenter'] }}
+                            style={{ width: '100%' }}
+                        />
                     </Row>
                 </>
             )}

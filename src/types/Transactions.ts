@@ -14,8 +14,8 @@ export interface Transaction extends Base, Timestamp {
     accountCurrency: string;
 
     exchangeRate: string;
-    merchant: string;
-    category: string;
+    merchantName: string;
+    categoryName: string;
     tags: string[];
     description: string;
     transactionAt: number;

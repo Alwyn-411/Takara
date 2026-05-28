@@ -33,6 +33,7 @@ func initTables(db *sqlx.DB) {
 	schema.InitUsers(db)
 	schema.InitAccounts(db)
 	schema.InitCategories(db)
+	schema.InitMerchant(db)
 	schema.InitTags(db)
 	schema.InitTransactions(db)
 	schema.InitTransactionTags(db)

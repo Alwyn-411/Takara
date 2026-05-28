@@ -19,7 +19,7 @@ func InitTags(db *sqlx.DB) {
 			userId TEXT NOT NULL,
 			active INTEGER DEFAULT 1,
 
-			tagName TEXT NOT NULL,
+			tagName TEXT NOT NULL COLLATE NOCASE,
 
 			createdAt INTEGER DEFAULT (strftime('%s','now')),
 			updatedAt INTEGER DEFAULT (strftime('%s','now')),

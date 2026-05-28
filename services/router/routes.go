@@ -65,7 +65,7 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 		// Merchants
 		api.POST("/merchants/", merchantHandler.CreateMerchant)
 		api.GET("/merchants/:merchantId", merchantHandler.GetMerchantById)
-		api.GET("/merchants/:merchantId", merchantHandler.UpdateMerchant)
+		api.PUT("/merchants/:merchantId", merchantHandler.UpdateMerchant)
 		api.DELETE("/merchants/:merchantId", merchantHandler.DeleteMerchant)
 		api.GET("/merchants/list", merchantHandler.ListMerchants)
 

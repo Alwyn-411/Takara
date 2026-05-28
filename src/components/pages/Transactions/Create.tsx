@@ -44,26 +44,26 @@ export const TransactionsCreate = () => {
 
     const tagOptionsQuery = useQuery({
         queryFn: listTag,
-        queryKey: [userId],
+        queryKey: ['tags', userId],
         enabled: !!userId,
     });
 
     const categoryOptionsQuery = useQuery({
         queryFn: listCategories,
-        queryKey: [userId],
+        queryKey: ['categories', userId],
         enabled: !!userId,
     });
 
     const merchantOptionsQuery = useQuery({
         queryFn: listMerchants,
-        queryKey: [userId],
+        queryKey: ['merchants', userId],
         enabled: !!userId,
     });
 
     const { mutate, isPending, isError } = useMutation({
         mutationFn: createTransaction,
         onSuccess: () => {
-            message.success('Edited Successfully');
+            message.success('Creation Successfully');
             navigate(-1);
         },
     });
@@ -75,8 +75,8 @@ export const TransactionsCreate = () => {
             type: values.type,
             settledAmount: String(values.settledAmount),
             settledCurrency: values.settledCurrency,
-            merchantName: values.merchant ?? '',
-            categoryName: values.category ?? '',
+            merchantName: values.merchantName ?? '',
+            categoryName: values.categoryName ?? '',
             description: values.description ?? '',
             tagNames: values.tags ?? [],
             transactionAt: (values.transactionAt as any)?.unix(),
@@ -101,20 +101,18 @@ export const TransactionsCreate = () => {
         },
     ];
 
-    const merchantOptions = merchantOptionsQuery.data?.records;
-    const categoryOptions = categoryOptionsQuery.data?.records;
-    const tagOptions = tagOptionsQuery.data?.records;
-
-    const tagsOptions = [
-        {
-            label: <>Name1</>,
-            value: 'Name1',
-        },
-        {
-            label: <>Name2</>,
-            value: 'Name2',
-        },
-    ];
+    const merchantOptions = (merchantOptionsQuery.data?.records ?? []).map((m) => ({
+        value: m.merchantName,
+        label: m.merchantName,
+    }));
+    const categoryOptions = (categoryOptionsQuery.data?.records ?? []).map((m) => ({
+        value: m.categoryName,
+        label: m.categoryName,
+    }));
+    const tagOptions = (tagOptionsQuery.data?.records ?? []).map((m) => ({
+        value: m.tagName,
+        label: m.tagName,
+    }));
 
     return (
         <Col span={24}>
@@ -188,13 +186,18 @@ export const TransactionsCreate = () => {
                                     </Form.Item>
                                 </Col>
                                 <Col span={7}>
-                                    <Form.Item label="Paid to" name="merchant" required rules={[{ required: true, message: 'Enter merchant name' }]}>
+                                    <Form.Item
+                                        label="Paid to"
+                                        name="merchantName"
+                                        required
+                                        rules={[{ required: true, message: 'Enter merchant name' }]}
+                                    >
                                         <AutoComplete
                                             options={merchantOptions}
                                             placeholder="Reciever Name"
                                             showSearch={{
                                                 filterOption: (inputValue, option) =>
-                                                    option!.merchantName.toUpperCase().includes(inputValue.toUpperCase()),
+                                                    (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase()),
                                             }}
                                         />
                                     </Form.Item>
@@ -226,7 +229,7 @@ export const TransactionsCreate = () => {
                                 <Col span={7}>
                                     <Form.Item
                                         label="Sent By"
-                                        name="merchant"
+                                        name="merchantName"
                                         required
                                         rules={[
                                             { required: true, message: 'Enter merchant name' },
@@ -238,7 +241,7 @@ export const TransactionsCreate = () => {
                                             placeholder="Sender Name"
                                             showSearch={{
                                                 filterOption: (inputValue, option) =>
-                                                    option!.merchantName.toUpperCase().includes(inputValue.toUpperCase()),
+                                                    (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase()),
                                             }}
                                         />
                                     </Form.Item>
@@ -271,16 +274,7 @@ export const TransactionsCreate = () => {
                                         required
                                         rules={[{ required: true, message: 'Select Transaction Time' }]}
                                     >
-                                        <DatePicker
-                                            showTime
-                                            use12Hours
-                                            style={{ width: '100%' }}
-                                            onChange={(value, dateString) => {
-                                                console.log('Selected Time: ', value);
-                                                console.log('Formatted Selected Time: ', dateString);
-                                            }}
-                                            onOk={() => {}}
-                                        />
+                                        <DatePicker showTime use12Hours style={{ width: '100%' }} />
                                     </Form.Item>
                                 </Col>
                             </Row>
@@ -296,13 +290,13 @@ export const TransactionsCreate = () => {
 
                         <Row gutter={16}>
                             <Col span={12}>
-                                <Form.Item label="Category" name="category">
+                                <Form.Item label="Category" name="categoryName">
                                     <AutoComplete
                                         options={categoryOptions}
                                         placeholder="Select a category"
                                         showSearch={{
                                             filterOption: (inputValue, option) =>
-                                                option!.categoryName.toUpperCase().includes(inputValue.toUpperCase()),
+                                                (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase()),
                                         }}
                                     />
                                 </Form.Item>
@@ -315,7 +309,8 @@ export const TransactionsCreate = () => {
                                         placeholder="Select transaction tags"
                                         onChange={() => {}}
                                         showSearch={{
-                                            filterOption: (inputValue, option) => option!.tagName.toUpperCase().includes(inputValue.toUpperCase()),
+                                            filterOption: (inputValue, option) =>
+                                                (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase()),
                                         }}
                                         options={tagOptions}
                                     />

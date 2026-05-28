@@ -61,7 +61,7 @@ func InitTransactions(db *sqlx.DB) {
  
 			FOREIGN KEY(userId) REFERENCES users(userId) ON DELETE CASCADE,
 			FOREIGN KEY(accountId) REFERENCES accounts(accountId) ON DELETE CASCADE,
-			FOREIGN KEY(categoryId) REFERENCES categories(categoryId) ON DELETE SET NULL
+			FOREIGN KEY(categoryId) REFERENCES categories(categoryId) ON DELETE SET NULL,
 			FOREIGN KEY(merchantId) REFERENCES merchants(merchantId) ON DELETE SET NULL
 		);
 	`
@@ -87,7 +87,7 @@ func InitIndexTransactions(db *sqlx.DB) {
 	db.MustExec(`
 		CREATE INDEX IF NOT EXISTS idx_transactions_user_date
 			ON transactions(userId, transactionAt);
- 
+  
 		CREATE INDEX IF NOT EXISTS idx_transactions_user_type
 			ON transactions(userId, type, active);
  

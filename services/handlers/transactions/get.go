@@ -3,6 +3,7 @@ package transactions
 import (
 	"database/sql"
 	"net/http"
+	"strconv"
 	"takara/services/schema"
 
 	"github.com/gin-gonic/gin"
@@ -90,28 +91,35 @@ type TransactionListItem struct {
 
 func (handler *TransactionsHandler) GetTransactionsByAccountId(ctx *gin.Context) {
 	accountId := ctx.Param("accountId")
-	limit := ctx.DefaultQuery("limit", "20")
-	offset := ctx.DefaultQuery("offset", "0")
 
-	// Use LEFT JOINs so we get merchant/category names in one query
+	limit, err := strconv.Atoi(ctx.DefaultQuery("limit", "20"))
+	if err != nil || limit < 1 {
+		limit = 20
+	}
+
+	offset, err := strconv.Atoi(ctx.DefaultQuery("offset", "0"))
+	if err != nil || offset < 0 {
+		offset = 0
+	}
+
 	transactions := []TransactionListItem{}
 	if err := handler.dbInstance.Select(&transactions, `
-		SELECT
-			t.transactionId, t.userId, t.accountId, t.type,
-			t.settledAmount, t.settledCurrency,
-			t.accountAmount, t.accountCurrency,
-			t.exchangeRate, t.merchantId, t.categoryId,
-			t.description, t.transactionAt, t.active,
-			t.createdAt, t.updatedAt,
-			COALESCE(m.merchantName, '') AS merchantName,
-			COALESCE(c.categoryName, '') AS categoryName
-		FROM transactions t
-		LEFT JOIN merchants m ON t.merchantId = m.merchantId
-		LEFT JOIN categories c ON t.categoryId = c.categoryId
-		WHERE t.accountId = ? AND t.active = 1
-		ORDER BY t.transactionAt DESC
-		LIMIT ? OFFSET ?
-	`, accountId, limit, offset); err != nil {
+        SELECT
+            t.transactionId, t.userId, t.accountId, t.type,
+            t.settledAmount, t.settledCurrency,
+            t.accountAmount, t.accountCurrency,
+            t.exchangeRate, t.merchantId, t.categoryId,
+            t.description, t.transactionAt, t.active,
+            t.createdAt, t.updatedAt,
+            COALESCE(m.merchantName, '') AS merchantName,
+            COALESCE(c.categoryName, '') AS categoryName
+        FROM transactions t
+        LEFT JOIN merchants m ON t.merchantId = m.merchantId
+        LEFT JOIN categories c ON t.categoryId = c.categoryId
+        WHERE t.accountId = ? AND t.active = 1
+        ORDER BY t.transactionAt DESC
+        LIMIT ? OFFSET ?
+    `, accountId, limit, offset); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}

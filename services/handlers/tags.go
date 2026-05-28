@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strings"
 	"takara/services/middleware"
 	"takara/services/schema"
 	"time"
@@ -203,6 +204,8 @@ func (handler *TagsHandler) GetTagsForTransaction(ctx *gin.Context) {
 }
 
 func ResolveOrCreateTag(dbTx *sqlx.Tx, userId, name string) (string, error) {
+	name = strings.TrimSpace(name)
+
 	if name == "" {
 		return "", nil
 	}

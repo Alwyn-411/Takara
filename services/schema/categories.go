@@ -19,7 +19,7 @@ func InitCategories(db *sqlx.DB) {
 			userId TEXT NOT NULL,
 			active INTEGER DEFAULT 1,
 
-			categoryName TEXT NOT NULL,
+			categoryName TEXT NOT NULL COLLATE NOCASE,
 
 			createdAt INTEGER DEFAULT (strftime('%s','now')),
 			updatedAt INTEGER DEFAULT (strftime('%s','now')),

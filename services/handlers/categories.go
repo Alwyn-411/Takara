@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strings"
 	"takara/services/middleware"
 	"takara/services/schema"
 	"time"
@@ -153,6 +154,7 @@ func (handler *CategoryHandler) ListCategories(ctx *gin.Context) {
 }
 
 func ResolveOrCreateCategory(dbTx *sqlx.Tx, userId, name string) (string, error) {
+	name = strings.TrimSpace(name)
 	if name == "" {
 		return "", nil
 	}

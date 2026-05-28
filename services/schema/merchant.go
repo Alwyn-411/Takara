@@ -19,7 +19,7 @@ func InitMerchant(db *sqlx.DB) {
 			userId TEXT NOT NULL,
 			active INTEGER DEFAULT 1,
 
-			merchantName TEXT NOT NULL,
+			merchantName TEXT NOT NULL COLLATE NOCASE,
 
 			createdAt INTEGER DEFAULT (strftime('%s','now')),
 			updatedAt INTEGER DEFAULT (strftime('%s','now')),
