@@ -43,17 +43,13 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 		api.GET("/account/list", accountHandler.ListAccounts)
 
 		// Category
-		api.POST("/category/", categoryHandler.CreateCategory)
-		api.GET("/category/:categoryId", categoryHandler.GetCategoryById)
-		api.PUT("/category/:categoryId", categoryHandler.UpdateCategory)
-		api.DELETE("/category/:categoryId", categoryHandler.DeleteCategory)
 		api.GET("/category/list", categoryHandler.ListCategories)
 
 		// Tags
-		api.POST("/tag/", tagsHandler.CreateTag)
-		api.GET("/tag/:tagId", tagsHandler.GetTagById)
-		api.PUT("/tag/:tagId", tagsHandler.UpdateTagById)
 		api.GET("/tag/list", tagsHandler.ListTags)
+
+		// Merchants
+		api.GET("/merchants/list", merchantHandler.ListMerchants)
 
 		// Transactions
 		api.POST("/transaction/", transactionsHandler.CreateTransaction)
@@ -62,16 +58,9 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 		api.DELETE("/transaction/:transactionId", transactionsHandler.DeleteTransaction)
 		api.GET("/transaction/account/:accountId", transactionsHandler.GetTransactionsByAccountId)
 
-		// Merchants
-		api.POST("/merchants/", merchantHandler.CreateMerchant)
-		api.GET("/merchants/:merchantId", merchantHandler.GetMerchantById)
-		api.PUT("/merchants/:merchantId", merchantHandler.UpdateMerchant)
-		api.DELETE("/merchants/:merchantId", merchantHandler.DeleteMerchant)
-		api.GET("/merchants/list", merchantHandler.ListMerchants)
-
 		// Transaction X Tags Routes
-		api.POST("/transaction/:transactionId/tags", tagsHandler.AddTagsToTransaction)
-		api.DELETE("/transaction/:transactionId/tags/:tagId", tagsHandler.RemoveTagFromTransaction)
-		api.GET("/transaction/:transactionId/tags", tagsHandler.GetTagsForTransaction)
+		// api.POST("/transaction/:transactionId/tags", tagsHandler.AddTagsToTransaction)
+		// api.DELETE("/transaction/:transactionId/tags/:tagId", tagsHandler.RemoveTagFromTransaction)
+		// api.GET("/transaction/:transactionId/tags", tagsHandler.GetTagsForTransaction)
 	}
 }

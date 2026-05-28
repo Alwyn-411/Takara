@@ -30,17 +30,29 @@ export const listTransactionsByAccountId = async (accountId: string): Promise<Li
     return response.data;
 };
 
-export const listMerchants = async (): Promise<ListResponse<Merchant>> => {
-    const response = await axiosInstance.get<ListResponse<Merchant>>('/v1/merchants/list');
+export const listMerchants = async (q: string): Promise<ListResponse<Merchant>> => {
+    const response = await axiosInstance.get<ListResponse<Merchant>>('/v1/merchants/list', {
+        params: {
+            q: q,
+        },
+    });
     return response.data;
 };
 
-export const listCategories = async (): Promise<ListResponse<Category>> => {
-    const response = await axiosInstance.get<ListResponse<Category>>('/v1/category/list');
+export const listCategories = async (q: string): Promise<ListResponse<Category>> => {
+    const response = await axiosInstance.get<ListResponse<Category>>('/v1/category/list', {
+        params: {
+            q: q,
+        },
+    });
     return response.data;
 };
 
-export const listTag = async (): Promise<ListResponse<Tag>> => {
-    const response = await axiosInstance.get<ListResponse<Tag>>('/v1/tag/list');
+export const listTag = async (q: string): Promise<ListResponse<Tag>> => {
+    const response = await axiosInstance.get<ListResponse<Tag>>('/v1/tag/list', {
+        params: {
+            q: q,
+        },
+    });
     return response.data;
 };

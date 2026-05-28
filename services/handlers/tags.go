@@ -7,7 +7,6 @@ import (
 	"strings"
 	"takara/services/middleware"
 	"takara/services/schema"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -22,92 +21,6 @@ func NewTagsHandler(db *sqlx.DB) *TagsHandler {
 	return &TagsHandler{dbInstance: db}
 }
 
-type CreateTagRequest struct {
-	UserId  string `json:"userId" binding:"required"`
-	TagName string `json:"tagName" binding:"required"`
-}
-
-func (handler *TagsHandler) CreateTag(ctx *gin.Context) {
-	var req CreateTagRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.AbortWithError(http.StatusUnprocessableEntity, err)
-		return
-	}
-
-	tagId := uuid.New().String()
-	// TODO: req.UserId comes from the body for now. Once auth middleware is in
-	// place, take the userId from the authenticated context instead and ignore
-	// any body-supplied userId.
-	if _, err := handler.dbInstance.NamedExec(
-		`INSERT INTO tags (userId, tagId, tagName) VALUES (:userId, :tagId, :tagName)`,
-		map[string]interface{}{
-			"userId":  req.UserId,
-			"tagId":   tagId,
-			"tagName": req.TagName,
-		},
-	); err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, gin.H{"id": tagId})
-}
-
-type UpdateTagRequest struct {
-	TagName *string `json:"tagName"`
-}
-
-func (handler *TagsHandler) UpdateTagById(ctx *gin.Context) {
-	tagId := ctx.Param("tagId")
-
-	var req UpdateTagRequest
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.AbortWithError(http.StatusUnprocessableEntity, err)
-		return
-	}
-	if req.TagName == nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "nothing to update"})
-		return
-	}
-
-	res, err := handler.dbInstance.NamedExec(
-		`UPDATE tags SET tagName = :tagName, updatedAt = :updatedAt WHERE tagId = :tagId AND active = 1`,
-		gin.H{
-			"tagId":     tagId,
-			"tagName":   *req.TagName,
-			"updatedAt": time.Now().Unix(),
-		})
-	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-	if n, _ := res.RowsAffected(); n == 0 {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "tag not found"})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{"id": tagId})
-}
-
-func (handler *TagsHandler) GetTagById(ctx *gin.Context) {
-	tagId := ctx.Param("tagId")
-
-	tag := schema.Tag{}
-	err := handler.dbInstance.Get(&tag,
-		`SELECT tagId, tagName, userId, active, createdAt, updatedAt
-		 FROM tags WHERE tagId = ? AND active = 1`, tagId)
-	if err == sql.ErrNoRows {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": "tag not found"})
-		return
-	}
-	if err != nil {
-		ctx.AbortWithError(http.StatusInternalServerError, err)
-		return
-	}
-
-	ctx.JSON(http.StatusOK, tag)
-}
-
 func (handler *TagsHandler) ListTags(ctx *gin.Context) {
 	userId, ok := middleware.CurrentUserId(ctx)
 	if !ok {
@@ -115,10 +28,20 @@ func (handler *TagsHandler) ListTags(ctx *gin.Context) {
 		return
 	}
 
+	term := ctx.Query("q")
+
 	tags := []schema.Tag{}
-	err := handler.dbInstance.Select(&tags,
-		`SELECT userId, tagId, tagName, active, createdAt, updatedAt
+	var err error
+
+	if term != "" {
+		err = handler.dbInstance.Select(&tags,
+			`SELECT userId, tagId, tagName, active, createdAt, updatedAt
+		 FROM tags WHERE userId = ? AND active = 1 AND tagName LIKE ? LIMIT 20`, userId, "%"+term+"%")
+	} else {
+		err = handler.dbInstance.Select(&tags,
+			`SELECT userId, tagId, tagName, active, createdAt, updatedAt
 		 FROM tags WHERE userId = ? AND active = 1 LIMIT 20`, userId)
+	}
 	if err != nil {
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return

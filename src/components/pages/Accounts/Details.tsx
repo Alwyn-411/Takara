@@ -3,11 +3,12 @@ import { useUserStore } from '../../../store/User';
 import { Alert, Breadcrumb, Button, Card, message, Popconfirm, Row, Space, Statistic, Table, Tag, Typography } from 'antd';
 import type { TableColumnsType } from 'antd';
 import { DeleteOutlined, EditOutlined, HomeOutlined, LeftOutlined, PlusOutlined, RightOutlined, SyncOutlined } from '@ant-design/icons';
-import { getAccountWithAccountId } from '../../../api/accounts';
+import { getAccountWithAccountId, listAccountsWithUserId } from '../../../api/accounts';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { currencies } from '../../../types/Accounts';
+import { currencies, type Accounts } from '../../../types/Accounts';
 import type { valueType } from 'antd/es/statistic/utils';
 import { deleteTransactionWithTransactionId, listTransactionsByAccountId } from '../../../api/transactions';
+import type { ListResponse } from '../../../api/default';
 
 const { Title, Text } = Typography;
 
@@ -15,6 +16,27 @@ export const AccountDetails = () => {
     const { accountId } = useParams<{ accountId: string }>();
     const { userId } = useUserStore();
     const navigate = useNavigate();
+
+    const listAccountsQuery = useQuery({
+        queryKey: ['listAccounts', userId],
+        queryFn: listAccountsWithUserId,
+        enabled: !!userId,
+    });
+
+    const accountRecords = listAccountsQuery.data?.records ?? [];
+    const currentIndex = accountRecords.findIndex((v) => v.accountId === accountId);
+
+    const moveToPrevAccount = () => {
+        const prev = accountRecords[currentIndex - 1];
+        if (!prev) return;
+        navigate(`../../${prev.accountId}/details`, { relative: 'path' });
+    };
+
+    const moveToNextAccount = () => {
+        const next = accountRecords[currentIndex + 1];
+        if (!next) return;
+        navigate(`../../${next.accountId}/details`, { relative: 'path' });
+    };
 
     const accountsQuery = useQuery({
         queryFn: () => getAccountWithAccountId(accountId!!),
@@ -155,10 +177,12 @@ export const AccountDetails = () => {
                         ]}
                     />
                 </Space>
-                <Space>
-                    <Button icon={<LeftOutlined />} />
-                    <Button icon={<RightOutlined />} />
-                </Space>
+                {listAccountsQuery.isSuccess && listAccountsQuery.data.count >= 2 && (
+                    <Space>
+                        <Button icon={<LeftOutlined />} onClick={moveToPrevAccount} />
+                        <Button icon={<RightOutlined />} onClick={moveToNextAccount} />
+                    </Space>
+                )}
             </Row>
             {accountsQuery.isSuccess && !!accountsQuery.data && (
                 <Row gutter={16} style={{ padding: 12 }}>

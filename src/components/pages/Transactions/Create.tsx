@@ -24,6 +24,8 @@ import { HomeOutlined } from '@ant-design/icons';
 import { TransactionType, type Transaction } from '../../../types/Transactions';
 import { currencies } from '../../../types/Accounts';
 import { createTransaction, listCategories, listMerchants, listTag } from '../../../api/transactions';
+import { useState } from 'react';
+import { useDebounce } from '../../core/Debounce';
 
 export interface Formfields extends Partial<Omit<Transaction, 'accountId' | 'transactionId' | 'userId' | 'active' | 'updatedAt' | 'createdAt'>> {}
 
@@ -42,21 +44,30 @@ export const TransactionsCreate = () => {
         enabled: !!accountId && !!userId,
     });
 
+    const [tagSearch, setTagSearch] = useState('');
+    const debouncedTagSearch = useDebounce(tagSearch, 150);
+
     const tagOptionsQuery = useQuery({
-        queryFn: listTag,
-        queryKey: ['tags', userId],
+        queryFn: () => listTag(debouncedTagSearch),
+        queryKey: ['tags', userId, debouncedTagSearch],
         enabled: !!userId,
     });
+
+    const [categorySearch, setCategorySearch] = useState('');
+    const debouncedCategorySearch = useDebounce(categorySearch, 150);
 
     const categoryOptionsQuery = useQuery({
-        queryFn: listCategories,
-        queryKey: ['categories', userId],
+        queryFn: () => listCategories(debouncedCategorySearch),
+        queryKey: ['categories', userId, debouncedCategorySearch],
         enabled: !!userId,
     });
 
+    const [merchantSearch, setMerchantSearch] = useState('');
+    const debouncedMerchantSearch = useDebounce(merchantSearch, 150);
+
     const merchantOptionsQuery = useQuery({
-        queryFn: listMerchants,
-        queryKey: ['merchants', userId],
+        queryFn: () => listMerchants(debouncedMerchantSearch),
+        queryKey: ['merchants', userId, debouncedMerchantSearch],
         enabled: !!userId,
     });
 
@@ -81,7 +92,6 @@ export const TransactionsCreate = () => {
             tagNames: values.tags ?? [],
             transactionAt: (values.transactionAt as any)?.unix(),
         };
-        console.log('payload', payload);
 
         mutate(payload);
     };
@@ -195,10 +205,7 @@ export const TransactionsCreate = () => {
                                         <AutoComplete
                                             options={merchantOptions}
                                             placeholder="Reciever Name"
-                                            showSearch={{
-                                                filterOption: (inputValue, option) =>
-                                                    (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase()),
-                                            }}
+                                            showSearch={{ onSearch: setMerchantSearch }}
                                         />
                                     </Form.Item>
                                 </Col>
@@ -209,16 +216,7 @@ export const TransactionsCreate = () => {
                                         required
                                         rules={[{ required: true, message: 'Select Transaction Time' }]}
                                     >
-                                        <DatePicker
-                                            showTime
-                                            use12Hours
-                                            style={{ width: '100%' }}
-                                            onChange={(value, dateString) => {
-                                                console.log('Selected Time: ', value);
-                                                console.log('Formatted Selected Time: ', dateString);
-                                            }}
-                                            onOk={() => {}}
-                                        />
+                                        <DatePicker showTime use12Hours style={{ width: '100%' }} />
                                     </Form.Item>
                                 </Col>
                             </Row>
@@ -240,8 +238,7 @@ export const TransactionsCreate = () => {
                                             options={merchantOptions}
                                             placeholder="Sender Name"
                                             showSearch={{
-                                                filterOption: (inputValue, option) =>
-                                                    (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase()),
+                                                onSearch: setMerchantSearch,
                                             }}
                                         />
                                     </Form.Item>
@@ -295,8 +292,7 @@ export const TransactionsCreate = () => {
                                         options={categoryOptions}
                                         placeholder="Select a category"
                                         showSearch={{
-                                            filterOption: (inputValue, option) =>
-                                                (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase()),
+                                            onSearch: setCategorySearch,
                                         }}
                                     />
                                 </Form.Item>
@@ -309,8 +305,7 @@ export const TransactionsCreate = () => {
                                         placeholder="Select transaction tags"
                                         onChange={() => {}}
                                         showSearch={{
-                                            filterOption: (inputValue, option) =>
-                                                (option?.value ?? '').toUpperCase().includes(inputValue.toUpperCase()),
+                                            onSearch: setTagSearch,
                                         }}
                                         options={tagOptions}
                                     />
