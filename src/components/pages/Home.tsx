@@ -1,9 +1,9 @@
-import { Image, Typography } from 'antd';
+import { Image, Row } from 'antd';
 
 export const Home = () => {
     return (
-        <Typography.Text>
-            <Image src="/work_in_progress.svg" alt="construction" preview={false} width="100%" />
-        </Typography.Text>
+        <Row justify="center">
+            <Image src="/work_in_progress.svg" alt="construction" preview={false} width={'30%'} />
+        </Row>
     );
 };
