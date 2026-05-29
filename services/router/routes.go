@@ -21,6 +21,29 @@ func Env(key, fallback string) string {
 	return fallback
 }
 
+func StaticAssetsRoutes(engine *gin.Engine) {
+	staticDir := Env("STATIC_DIR", "")
+
+	if staticDir != "" {
+		engine.Static("/assets", filepath.Join(staticDir, "assets"))
+		engine.NoRoute(func(c *gin.Context) {
+			path := c.Request.URL.Path
+			if strings.HasPrefix(path, "/v1") || path == "/ping" {
+				c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
+				return
+			}
+
+			requested := filepath.Join(staticDir, path)
+			if info, err := os.Stat(requested); err == nil && !info.IsDir() {
+				c.File(requested)
+				return
+			}
+
+			c.File(filepath.Join(staticDir, "index.html"))
+		})
+	}
+}
+
 func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 	forexSvc := forex.NewAccessor()
 	tokenSvc := middleware.NewTokenService(Env("TOKEN_SECRET", ""))
@@ -62,23 +85,5 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 		api.GET("/transaction/account/:accountId", transactionsHandler.GetTransactionsByAccountId)
 	}
 
-	staticDir := os.Getenv("STATIC_DIR")
-	if staticDir != "" {
-		engine.Static("/assets", filepath.Join(staticDir, "assets"))
-		engine.NoRoute(func(c *gin.Context) {
-			path := c.Request.URL.Path
-			if strings.HasPrefix(path, "/v1") || path == "/ping" {
-				c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
-				return
-			}
-
-			requested := filepath.Join(staticDir, path)
-			if info, err := os.Stat(requested); err == nil && !info.IsDir() {
-				c.File(requested)
-				return
-			}
-
-			c.File(filepath.Join(staticDir, "index.html"))
-		})
-	}
+	StaticAssetsRoutes(engine)
 }
