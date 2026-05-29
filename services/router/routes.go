@@ -32,7 +32,6 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 	accountHandler := handlers.NewAccountHandler(db)
 	transactionsHandler := transactions.NewTransactionsHandler(db, forexSvc)
 
-	// --- API routes (unchanged) ---
 	engine.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusAccepted, gin.H{"message": "pong"})
 	})
@@ -66,15 +65,19 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 	staticDir := os.Getenv("STATIC_DIR")
 	if staticDir != "" {
 		engine.Static("/assets", filepath.Join(staticDir, "assets"))
-		engine.StaticFile("/favicon.ico", filepath.Join(staticDir, "favicon.ico"))
-		engine.StaticFile("/vite.svg", filepath.Join(staticDir, "vite.svg"))
-
 		engine.NoRoute(func(c *gin.Context) {
 			path := c.Request.URL.Path
 			if strings.HasPrefix(path, "/v1") || path == "/ping" {
 				c.JSON(http.StatusNotFound, gin.H{"error": "not found"})
 				return
 			}
+
+			requested := filepath.Join(staticDir, path)
+			if info, err := os.Stat(requested); err == nil && !info.IsDir() {
+				c.File(requested)
+				return
+			}
+
 			c.File(filepath.Join(staticDir, "index.html"))
 		})
 	}
