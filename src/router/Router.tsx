@@ -1,12 +1,12 @@
 import { Route, Routes } from 'react-router-dom';
 import { ContentLayout } from '../components/core/Layout';
-import { Home } from '../components/pages/Home';
-import { Login } from '../components/pages/Auth/Login';
-import { Register } from '../components/pages/Auth/Register';
 import { AccountCreate } from '../components/pages/Accounts/Create';
+import { AccountDetails } from '../components/pages/Accounts/Details';
 import { AccountEdit } from '../components/pages/Accounts/Edit';
 import { Accounts as AccountOverview } from '../components/pages/Accounts/Overview';
-import { AccountDetails } from '../components/pages/Accounts/Details';
+import { Login } from '../components/pages/Auth/Login';
+import { Register } from '../components/pages/Auth/Register';
+import { Home } from '../components/pages/Home';
 import { TransactionsCreate } from '../components/pages/Transactions/Create';
 
 export const Router = () => {

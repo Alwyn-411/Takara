@@ -1,13 +1,13 @@
-import { Alert, Breadcrumb, Button, Card, Col, Form, Input, InputNumber, Radio, Row, Select, Typography, type FormProps } from 'antd';
-import TextArea from 'antd/es/input/TextArea';
-import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import type { CheckboxGroupProps } from 'antd/es/checkbox';
-import { currencies, type Accounts } from '../../../types/Accounts';
-import { createAccount } from '../../../api/accounts';
-import { useUserStore } from '../../../store/User';
-import type { CreateResponse } from '../../../api/default';
 import { HomeOutlined } from '@ant-design/icons';
+import { useMutation } from '@tanstack/react-query';
+import { Alert, Breadcrumb, Button, Card, Col, Form, Input, InputNumber, Radio, Row, Select, Typography, type FormProps } from 'antd';
+import type { CheckboxGroupProps } from 'antd/es/checkbox';
+import TextArea from 'antd/es/input/TextArea';
+import { useNavigate } from 'react-router-dom';
+import { createAccount } from '../../../api/accounts';
+import type { CreateResponse } from '../../../api/default';
+import { useUserStore } from '../../../store/User';
+import { currencies, type Accounts } from '../../../types/Accounts';
 
 const { Text } = Typography;
 

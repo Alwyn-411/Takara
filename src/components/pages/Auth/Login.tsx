@@ -1,7 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { Button, Card, Checkbox, Col, Divider, Flex, Form, Image, Input, message, Row, Space, Typography, type FormProps } from 'antd';
-import { FcGoogle } from 'react-icons/fc';
-import { GrGithub } from 'react-icons/gr';
+import { Button, Card, Checkbox, Col, Flex, Form, Image, Input, message, Row, Space, Typography, type FormProps } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { AuthUser } from '../../../api/auth';
 import { getUser } from '../../../api/user';

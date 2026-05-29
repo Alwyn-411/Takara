@@ -1,12 +1,12 @@
-import { Alert, Breadcrumb, Button, Card, Col, Form, Input, InputNumber, message, Radio, Row, Select, Typography, type FormProps } from 'antd';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { editAccountWithAccountId, getAccountWithAccountId } from '../../../api/accounts';
-import { currencies, type Accounts } from '../../../types/Accounts';
-import { useUserStore } from '../../../store/User';
-import { options, type Formfields } from './Create';
-import { useEffect } from 'react';
 import { HomeOutlined } from '@ant-design/icons';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Alert, Breadcrumb, Button, Card, Col, Form, Input, InputNumber, message, Radio, Row, Select, Typography, type FormProps } from 'antd';
+import { useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { editAccountWithAccountId, getAccountWithAccountId } from '../../../api/accounts';
+import { useUserStore } from '../../../store/User';
+import { currencies, type Accounts } from '../../../types/Accounts';
+import { options, type Formfields } from './Create';
 
 const { TextArea } = Input;
 const { Text } = Typography;

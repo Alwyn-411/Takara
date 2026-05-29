@@ -2,7 +2,6 @@ import axios from 'axios';
 import { useUserStore } from '../store/User';
 
 export const axiosInstance = axios.create({
-    baseURL: 'http://localhost:8080',
     headers: {
         'Content-Type': 'application/json',
     },

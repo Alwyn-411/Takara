@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 )
 
-const ForExEndpoint string = "api.frankfurter.dev"
+// "api.frankfurter.dev"
+var ForExEndpoint string = os.Getenv("FOREX_ENDPOINT")
 
 type response struct {
 	Base  string  `json:"base"`

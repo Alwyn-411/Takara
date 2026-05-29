@@ -1,11 +1,8 @@
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Col, Divider, Flex, Form, Image, Input, Row, Space, Typography, type FormProps } from 'antd';
-import { FcGoogle } from 'react-icons/fc';
-import { GrGithub } from 'react-icons/gr';
-import { useNavigate } from 'react-router-dom';
-import { createUser, type CreateUserRequest, type CreateUserResponse } from '../../../api/user';
 import { useMutation } from '@tanstack/react-query';
+import { Alert, Button, Card, Col, Flex, Form, Image, Input, Row, Space, Typography, type FormProps } from 'antd';
 import Link from 'antd/es/typography/Link';
+import { createUser, type CreateUserRequest, type CreateUserResponse } from '../../../api/user';
 
 const { Title, Text } = Typography;
 

@@ -1,0 +1,21 @@
+services:
+    takara:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: takara
+        ports:
+            - '8080:8080'
+        environment:
+            GIN_MODE: release
+            PORT: '8080'
+            DB_PATH: /data/takara.db
+            STATIC_DIR: /app/dist
+            FOREX_ENDPOINT: https://api.frankfurter.dev
+            TOKEN_SECRET: ${TOKEN_SECRET}
+        volumes:
+            - takara-data:/data
+        restart: unless-stopped
+
+volumes:
+    takara-data:
