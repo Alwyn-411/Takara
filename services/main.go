@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 	_ "modernc.org/sqlite"
 )
 
@@ -39,6 +40,8 @@ func initTables(db *sqlx.DB) {
 }
 
 func main() {
+	_ = godotenv.Load("../.env")
+
 	if os.Getenv("TOKEN_SECRET") == "" {
 		log.Fatal("TOKEN_SECRET is required")
 	}
