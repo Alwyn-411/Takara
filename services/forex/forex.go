@@ -10,9 +10,6 @@ import (
 	"time"
 )
 
-// "api.frankfurter.dev"
-var ForExEndpoint string = os.Getenv("FOREX_ENDPOINT")
-
 type response struct {
 	Base  string  `json:"base"`
 	Quote string  `json:"quote"`
@@ -26,17 +23,21 @@ type cache struct {
 }
 
 type ForEx struct {
-	client *http.Client
-	cache  map[string]cache
-	mu     sync.RWMutex
-	ttl    time.Duration
+	client   *http.Client
+	cache    map[string]cache
+	mu       sync.RWMutex
+	endpoint string
+	ttl      time.Duration
 }
 
 func NewAccessor() *ForEx {
+	endpoint := os.Getenv("FOREX_ENDPOINT")
+
 	return &ForEx{
-		client: &http.Client{Timeout: 10 * time.Second},
-		cache:  make(map[string]cache),
-		ttl:    1 * time.Hour, // rates don't change intraday
+		client:   &http.Client{Timeout: 10 * time.Second},
+		cache:    make(map[string]cache),
+		endpoint: endpoint,
+		ttl:      1 * time.Hour, // rates don't change intraday
 	}
 }
 
@@ -54,7 +55,7 @@ func (s *ForEx) GetRate(base, quote string) (string, error) {
 	}
 	s.mu.RUnlock()
 
-	url := fmt.Sprintf("https://%s/v2/rate/%s/%s", ForExEndpoint, base, quote)
+	url := fmt.Sprintf("https://%s/v2/rate/%s/%s", s.endpoint, base, quote)
 	resp, err := s.client.Get(url)
 	if err != nil {
 		return "", fmt.Errorf("ForEx request failed: %w", err)
@@ -83,7 +84,7 @@ func (s *ForEx) GetRate(base, quote string) (string, error) {
 func (s *ForEx) GetHistoricalRate(base, quote, date string) (string, error) {
 	url := fmt.Sprintf(
 		"https://%s/v2/rate/%s/%s?date=%s",
-		ForExEndpoint, base, quote, date,
+		s.endpoint, base, quote, date,
 	)
 
 	resp, err := s.client.Get(url)

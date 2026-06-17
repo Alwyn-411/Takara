@@ -42,7 +42,9 @@ export const ContentLayout = () => {
             key: '3',
             icon: <BankOutlined />,
             label: 'Holdings',
-            onClick: () => {},
+            onClick: () => {
+                navigate('/holdings');
+            },
         },
     ];
 

@@ -46,6 +46,10 @@ func main() {
 		log.Fatal("TOKEN_SECRET is required")
 	}
 
+	if os.Getenv("FOREX_ENDPOINT") == "" {
+		log.Fatal("FOREX_ENDPOINT is required")
+	}
+
 	engine := gin.Default()
 	engine.Use(middleware.CreateCorsMiddleware())
 

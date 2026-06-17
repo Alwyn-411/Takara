@@ -3,6 +3,9 @@ import type { Base, Timestamp } from './Common';
 export const TransactionType = { Debit: 'Debit', Credit: 'Credit' } as const;
 export type TransactionDataType = (typeof TransactionType)[keyof typeof TransactionType];
 
+export const HoldingType = { Asset: 'Asset', Liability: 'Liability' } as const;
+export type HoldingDataType = (typeof HoldingType)[keyof typeof HoldingType];
+
 export interface Transaction extends Base, Timestamp {
     accountId: string;
     transactionId: string;
