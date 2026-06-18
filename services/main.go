@@ -37,6 +37,10 @@ func initTables(db *sqlx.DB) {
 	schema.InitTransactionTags(db)
 	schema.InitIndexUsers(db)
 	schema.InitIndexTransactions(db)
+	schema.InitHolding(db)
+	schema.InitHoldingValuation(db)
+	schema.InitIndexHolding(db)
+	schema.InitIndexHoldingValuation(db)
 }
 
 func main() {

@@ -1,0 +1,17 @@
+.holdingtype-asset {
+    .ant-segmented-item {
+        font-weight: bold;
+    }
+    .ant-segmented-item-selected {
+        color: #73d13d;   
+    }
+}
+
+.holdingtype-liability {
+    .ant-segmented-item {
+        font-weight: bold;
+    }
+    .ant-segmented-item-selected {
+        color: #fa541c;
+    }
+}

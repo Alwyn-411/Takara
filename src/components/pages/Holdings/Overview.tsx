@@ -1,26 +1,17 @@
 import { Badge, Button, Card, Divider, Row, Segmented, Space, Typography } from 'antd';
-import Text from 'antd/es/typography/Text';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUserStore } from '../../../store/User';
 import { HoldingType, type HoldingDataType } from '../../../types/Transactions';
+import './Overview.css';
+
 const { Title } = Typography;
 
 export const Holdings = () => {
     const navigate = useNavigate();
     const userId = useUserStore.getState().userId;
-    const [type, setType] = useState<HoldingDataType>(HoldingType.Asset);
 
-    const options = [
-        {
-            label: <Text type="danger">Asset</Text>,
-            value: HoldingType.Asset,
-        },
-        {
-            label: <Text type="success">Liability</Text>,
-            value: HoldingType.Liability,
-        },
-    ];
+    const [holdingType, setHoldingType] = useState<HoldingDataType>(HoldingType.Asset);
 
     return (
         <>
@@ -44,7 +35,12 @@ export const Holdings = () => {
                     </Space>
                 </Row>
                 <Divider />
-                <Segmented<HoldingDataType> options={options} value={type} onSelect={(value) => {setType(value.)}} block />
+                <Segmented<HoldingDataType>
+                    className={holdingType === HoldingType.Asset ? 'holdingtype-asset' : 'holdingtype-liability'}
+                    options={[HoldingType.Asset, HoldingType.Liability]}
+                    onChange={setHoldingType}
+                    block
+                />
             </Card>
         </>
     );
