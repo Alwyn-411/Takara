@@ -1,17 +1,12 @@
-.holdingtype-asset {
-    .ant-segmented-item {
-        font-weight: bold;
-    }
-    .ant-segmented-item-selected {
-        color: #73d13d;   
-    }
+.holdingtype-asset.ant-segmented,
+.holdingtype-liability.ant-segmented {
+    font-weight: bold;
 }
 
-.holdingtype-liability {
-    .ant-segmented-item {
-        font-weight: bold;
-    }
-    .ant-segmented-item-selected {
-        color: #fa541c;
-    }
+.holdingtype-asset.ant-segmented {
+    --ant-segmented-item-selected-color: #73d13d;
+}
+
+.holdingtype-liability.ant-segmented {
+    --ant-segmented-item-selected-color: #fa541c;
 }

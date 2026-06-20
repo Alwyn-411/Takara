@@ -7,6 +7,7 @@ import (
 	"strings"
 	"takara/services/forex"
 	"takara/services/handlers"
+	"takara/services/handlers/holdings"
 	"takara/services/handlers/transactions"
 	"takara/services/middleware"
 
@@ -54,6 +55,7 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 	merchantHandler := handlers.NewMerchantHandler(db)
 	accountHandler := handlers.NewAccountHandler(db)
 	transactionsHandler := transactions.NewTransactionsHandler(db, forexSvc)
+	holdingsHandler := holdings.NewHoldingsHandler(db)
 
 	engine.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusAccepted, gin.H{"message": "pong"})
@@ -83,6 +85,15 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 		api.PUT("/transaction/:transactionId", transactionsHandler.UpdateTransaction)
 		api.DELETE("/transaction/:transactionId", transactionsHandler.DeleteTransaction)
 		api.GET("/transaction/account/:accountId", transactionsHandler.GetTransactionsByAccountId)
+
+		api.POST("/holdings", holdingsHandler.CreateHolding)
+		api.GET("/holdings", holdingsHandler.ListHoldings)
+		api.GET("/holdings/:id", holdingsHandler.GetHoldingById)
+		api.PUT("/holdings/:id", holdingsHandler.UpdateHoldingById)
+		api.DELETE("/holdings/:id", holdingsHandler.DeleteHoldingById)
+		api.POST("/holdings/:id/valuations", holdingsHandler.CreateValuation)
+		api.GET("/holdings/:id/valuations", holdingsHandler.ListValuations)
+		api.DELETE("/valuations/:id", holdingsHandler.DeleteValuation)
 	}
 
 	StaticAssetsRoutes(engine)
