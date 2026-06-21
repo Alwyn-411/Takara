@@ -11,6 +11,7 @@ import { HoldingsCreate } from '../components/pages/Holdings/Create';
 import { Home } from '../components/pages/Home';
 import { TransactionsCreate } from '../components/pages/Transactions/Create';
 import { HoldingTrends } from '../components/pages/Holdings/Trends';
+import { ValuationCreate } from '../components/pages/Holdings/CreateValuations';
 
 export const Router = () => {
     return (
@@ -28,6 +29,7 @@ export const Router = () => {
                     <Route path="/holdings" element={<HoldingsOverview />} />
                     <Route path="/holdings/create" element={<HoldingsCreate />} />
                     <Route path="/holdings/:holdingId/trends" element={<HoldingTrends />} />
+                    <Route path="/holdings/:holdingId/trends/add" element={<ValuationCreate />} />
                 </Route>
             </Routes>
         </>

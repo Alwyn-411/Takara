@@ -11,14 +11,14 @@ export type CreateHoldingRequest = Pick<Holding, 'kind' | 'type' | 'name' | 'cur
 export type UpdateHoldingRequest = Partial<Pick<Holding, 'type' | 'name' | 'description' | 'closedAt'>>;
 
 export type RecordValuationRequest = Pick<HoldingValuation, 'value'> &
-    Partial<Pick<HoldingValuation, 'quantity' | 'unitPrice' | 'observedAt' | 'note'>>;
+    Partial<Pick<HoldingValuation, 'quantity' | 'unitPrice' | 'observedAt' | 'note'>> & { holdingId: string };
 
 export const createHolding = async (data: CreateHoldingRequest): Promise<CreateResponse> => {
     const response = await axiosInstance.post<CreateResponse>('/v1/holdings', data);
     return response.data;
 };
 
-export const createHoldingValuation = async (data: RecordValuationRequest & { holdingId: string }): Promise<CreateResponse> => {
+export const createHoldingValuation = async (data: RecordValuationRequest): Promise<CreateResponse> => {
     const response = await axiosInstance.post<CreateResponse>(`/v1/holdings/${data.holdingId}/valuations`, data);
     return response.data;
 };

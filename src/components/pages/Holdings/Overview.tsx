@@ -12,6 +12,7 @@ import { HiTrendingUp } from 'react-icons/hi';
 import dayjs from 'dayjs';
 
 import './Overview.css';
+import type { SegmentedOptions } from 'antd/es/segmented';
 
 const { Title, Text } = Typography;
 
@@ -119,6 +120,27 @@ export const Holdings = () => {
         },
     ];
 
+    const HoldingTypeOptions: SegmentedOptions<HoldingDataType> = [
+        {
+            value: HoldingType.Asset,
+            label: (
+                <Space size="small">
+                    {HoldingType.Asset}
+                    <Badge count={!!data ? AssetHoldings.length : 0} color="green" />
+                </Space>
+            ),
+        },
+        {
+            value: HoldingType.Liability,
+            label: (
+                <Space size="small">
+                    {HoldingType.Liability}
+                    <Badge count={!!data ? LiabilityHoldings.length : 0} color="orange" />
+                </Space>
+            ),
+        },
+    ];
+
     return (
         <>
             <Card>
@@ -163,7 +185,7 @@ export const Holdings = () => {
                     <Col span={24}>
                         <Segmented<HoldingDataType>
                             className={holdingType === HoldingType.Asset ? 'holdingtype-asset' : 'holdingtype-liability'}
-                            options={[HoldingType.Asset, HoldingType.Liability]}
+                            options={HoldingTypeOptions}
                             onChange={setHoldingType}
                             block
                         />
