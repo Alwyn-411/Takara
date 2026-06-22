@@ -29,6 +29,7 @@ func initDatabase() (*sqlx.DB, error) {
 func initTables(db *sqlx.DB) {
 	schema.ForeignKeysEnabled(db)
 	schema.InitUsers(db)
+	schema.InitPreferences(db)
 	schema.InitAccounts(db)
 	schema.InitCategories(db)
 	schema.InitMerchant(db)

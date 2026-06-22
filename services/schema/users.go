@@ -11,6 +11,9 @@ type User struct {
 	Email    string `db:"email" json:"email"`
 	AltEmail string `db:"altEmail" json:"altEmail,omitempty"`
 
+	Avatar         []byte `db:"avatar" json:"-"`
+	AvatarMimeType string `db:"avatarMimeType" json:"-"`
+
 	Password string `db:"password" json:"password"`
 	Timestamp
 }
@@ -26,6 +29,9 @@ func InitUsers(dbInstance *sqlx.DB) {
 		email TEXT,
 		altName TEXT,
 		altEmail TEXT,
+
+    	avatar BLOB,
+    	avatarMimeType TEXT,
 
 		createdAt INTEGER DEFAULT (strftime('%s','now')),
 		updatedAt INTEGER DEFAULT (strftime('%s','now'))

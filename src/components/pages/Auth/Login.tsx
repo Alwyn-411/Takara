@@ -1,8 +1,9 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { Button, Card, Checkbox, Col, Flex, Form, Image, Input, message, Row, Space, Typography, type FormProps } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { AuthUser } from '../../../api/auth';
-import { getUser } from '../../../api/user';
+import { getUser, getUserPref } from '../../../api/user';
+import { userPrefInitialState, useUserPrefStore } from '../../../store/Preferences';
 import { useUserStore } from '../../../store/User';
 
 const { Title, Text, Link } = Typography;
@@ -15,9 +16,18 @@ type FormFields = {
 
 export const Login = () => {
     const navigate = useNavigate();
+    const userId = useUserStore.getState().userId;
 
     const updateUser = useUserStore((s) => s.updateUser);
+    const updateUserPref = useUserPrefStore((s) => s.updateUserPref);
+
     const setToken = useUserStore((s) => s.setToken);
+
+    const { data } = useQuery({
+        queryKey: ['userPref', userId],
+        queryFn: getUserPref,
+        enabled: !!userId,
+    });
 
     const { mutate } = useMutation({
         mutationFn: async (values: FormFields) => {
@@ -40,6 +50,12 @@ export const Login = () => {
                 email: user.email,
                 altEmail: user.altEmail,
             });
+
+            updateUserPref({
+                currency: data?.currency ?? userPrefInitialState.currency,
+                theme: data?.theme ?? userPrefInitialState.theme,
+            });
+
             navigate('/home');
         },
         onError: (error) => {
@@ -53,7 +69,7 @@ export const Login = () => {
     };
 
     const onFinishFailed: FormProps<FormFields>['onFinishFailed'] = (errorInfo) => {
-        console.log('Failed:', errorInfo);
+        console.error('Failed:', errorInfo);
     };
 
     return (

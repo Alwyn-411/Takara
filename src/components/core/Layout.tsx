@@ -1,4 +1,12 @@
-import { AccountBookOutlined, BankOutlined, CaretLeftOutlined, CaretRightOutlined, HomeOutlined, UserOutlined } from '@ant-design/icons';
+import {
+    AccountBookOutlined,
+    BankOutlined,
+    CaretLeftOutlined,
+    CaretRightOutlined,
+    HomeOutlined,
+    ProfileOutlined,
+    UserOutlined,
+} from '@ant-design/icons';
 
 import { Avatar, Button, Dropdown, Flex, Layout, Menu, Typography, theme, type MenuProps } from 'antd';
 
@@ -12,7 +20,7 @@ import { useUserStore } from '../../store/User';
 import './Layout.css';
 
 const { Header, Sider, Content } = Layout;
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 export const ContentLayout = () => {
     const userId = useUserStore((state) => state.userId);
@@ -49,6 +57,15 @@ export const ContentLayout = () => {
             label: 'Holdings',
             onClick: () => navigate('/holdings'),
         },
+        {
+            type: 'divider',
+        },
+        {
+            key: '/Profile',
+            icon: <ProfileOutlined />,
+            label: 'Profile',
+            onClick: () => navigate('/profile'),
+        },
     ];
 
     const ProfileItems: MenuProps['items'] = [
@@ -63,10 +80,7 @@ export const ContentLayout = () => {
         {
             key: '2',
             label: 'Profile',
-        },
-        {
-            key: '3',
-            label: 'Settings',
+            onClick: () => navigate('/profile'),
         },
         {
             type: 'divider',
@@ -144,7 +158,7 @@ export const ContentLayout = () => {
                             onClick: ProfileOnClick,
                         }}
                     >
-                        <Avatar icon={<UserOutlined />} className="profile-avatar" />
+                        <Avatar icon={<UserOutlined />} className="profile-avatar" src={`/v1/user/avatar/${useUserStore.getState().userId}`} />
                     </Dropdown>
                 </Header>
 

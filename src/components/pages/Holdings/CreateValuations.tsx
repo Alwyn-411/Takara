@@ -1,14 +1,13 @@
 import { HomeOutlined } from '@ant-design/icons';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Alert, Breadcrumb, Button, Card, Col, DatePicker, Flex, Form, Input, InputNumber, Row, type FormProps } from 'antd';
+import dayjs from 'dayjs';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { CreateResponse } from '../../../api/default';
-import { currencies } from '../../../types/Accounts';
 import { createHoldingValuation, getHoldingById, type RecordValuationRequest as FormDataType } from '../../../api/holdings';
-import { HoldingType } from '../../../types/Holdings';
-import dayjs from 'dayjs';
-import { useEffect } from 'react';
 import { useUserStore } from '../../../store/User';
+import { currencies } from '../../../types/Accounts';
+import { HoldingType } from '../../../types/Holdings';
 
 const { TextArea } = Input;
 
@@ -24,19 +23,17 @@ export const ValuationCreate = () => {
         onSuccess: () => navigate(-1),
     });
 
-    const selectedHoldingType = Form.useWatch('type', form);
-
     const HoldingQuery = useQuery({
         queryKey: ['Holding', userId, holdingId],
-        queryFn: () => getHoldingById({ holdingId }),
+        queryFn: () => getHoldingById({ holdingId: holdingId! }),
         enabled: !!userId && !!holdingId,
     });
 
-    const currencyObj = currencies.find((c) => c.value === HoldingQuery.data.currency);
+    const currencyObj = currencies.find((c) => c.value === HoldingQuery.data?.currency);
 
     const onFinish: FormProps<FormDataType>['onFinish'] = (values) => {
         mutate({
-            holdingId: holdingId,
+            holdingId: holdingId!,
             value: String(values.value),
             observedAt: (values.observedAt as any)?.unix(),
             ...(values.note && { note: values.note }),

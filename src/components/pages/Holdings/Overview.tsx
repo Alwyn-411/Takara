@@ -1,18 +1,19 @@
-import { Badge, Button, Card, Col, Divider, Empty, message, Popconfirm, Row, Segmented, Space, Spin, Table, Typography, type TableProps } from 'antd';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useUserStore } from '../../../store/User';
-import { TrendStatistics } from '../../core/TrendStats/TrendStats';
-import { assetKindOptions, HoldingType, liabilityKindOptions, type HoldingDataType, type HoldingWithValue } from '../../../types/Holdings';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { deleteHolding, getHoldings } from '../../../api/holdings';
 import { DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
-import { currencies } from '../../../types/Accounts';
-import { HiTrendingUp } from 'react-icons/hi';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { Badge, Button, Card, Col, Divider, Empty, message, Popconfirm, Row, Segmented, Space, Spin, Table, Typography, type TableProps } from 'antd';
 import dayjs from 'dayjs';
+import { useState } from 'react';
+import { HiTrendingUp } from 'react-icons/hi';
+import { useNavigate } from 'react-router-dom';
+import { deleteHolding, getHoldings } from '../../../api/holdings';
+import { useUserStore } from '../../../store/User';
+import { currencies } from '../../../types/Accounts';
+import { assetKindOptions, HoldingType, liabilityKindOptions, type HoldingDataType, type HoldingWithValue } from '../../../types/Holdings';
+import { TrendStatistics } from '../../core/TrendStats/TrendStats';
 
-import './Overview.css';
 import type { SegmentedOptions } from 'antd/es/segmented';
+import { useUserPrefStore } from '../../../store/Preferences';
+import './Overview.css';
 
 const { Title, Text } = Typography;
 
@@ -21,6 +22,8 @@ export const Holdings = () => {
     const userId = useUserStore.getState().userId;
 
     const [holdingType, setHoldingType] = useState<HoldingDataType>(HoldingType.Asset);
+
+    const userPreferedCurrency = currencies.find((val) => val.value === useUserPrefStore.getState().currency);
 
     const { data, refetch, isLoading, isSuccess } = useQuery({
         queryKey: ['holdings', userId],
@@ -57,8 +60,8 @@ export const Holdings = () => {
                 return (
                     <>
                         {record.type === HoldingType.Asset
-                            ? assetKindOptions.find((value) => value.value == kind).label
-                            : liabilityKindOptions.find((value) => value.value == kind).label}
+                            ? assetKindOptions.find((value) => value.value == kind)?.label
+                            : liabilityKindOptions.find((value) => value.value == kind)?.label}
                     </>
                 );
             },
@@ -167,13 +170,19 @@ export const Holdings = () => {
                 <Divider />
                 <Row gutter={16} justify="center" align="middle">
                     <Col span={6}>
-                        <TrendStatistics title="Net Worth" value={1322} prefix="₹" delta={4.2} />
+                        <TrendStatistics title="Net Worth" value={1322} prefix={userPreferedCurrency?.symbol} delta={4.2} />
                     </Col>
                     <Col span={6}>
-                        <TrendStatistics title="Total Assets" value={1444} prefix="₹" delta={2.1} />
+                        <TrendStatistics title="Total Assets" value={1444} prefix={userPreferedCurrency?.symbol} delta={2.1} />
                     </Col>
                     <Col span={6}>
-                        <TrendStatistics title="Total Liabilities" value={122} prefix="₹" delta={8.0} higherIsBetter={false} />
+                        <TrendStatistics
+                            title="Total Liabilities"
+                            value={122}
+                            prefix={userPreferedCurrency?.symbol}
+                            delta={8.0}
+                            higherIsBetter={false}
+                        />
                     </Col>
                     <Col span={6}>
                         <TrendStatistics title="Debt-Asset Ratio" value={8.4} suffix="%" precision={1} delta={-1.2} higherIsBetter={false} />

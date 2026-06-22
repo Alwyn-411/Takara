@@ -1,13 +1,13 @@
-import { useQuery } from '@tanstack/react-query';
-import { useUserStore } from '../../../store/User';
-import { getHoldingById, getHoldingValuations } from '../../../api/holdings';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Badge, Breadcrumb, Button, Card, Col, Divider, Empty, Row, Space, Spin, Statistic, Table, Tag, Typography } from 'antd';
-import dayjs from 'dayjs';
-import { assetKindOptions, HoldingType, liabilityKindOptions, type HoldingValuation } from '../../../types/Holdings';
-import type { ColumnsType } from 'antd/es/table';
 import { HomeOutlined, ReloadOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
+import { Badge, Breadcrumb, Button, Card, Col, Divider, Row, Space, Spin, Statistic, Table, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import dayjs from 'dayjs';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getHoldingById, getHoldingValuations } from '../../../api/holdings';
+import { useUserStore } from '../../../store/User';
 import { currencies } from '../../../types/Accounts';
+import { assetKindOptions, HoldingType, liabilityKindOptions, type HoldingValuation } from '../../../types/Holdings';
 import './Trends.css';
 
 const { Text, Title } = Typography;
@@ -20,13 +20,13 @@ export const HoldingTrends = () => {
 
     const HoldingValuationQuery = useQuery({
         queryKey: ['HoldingTrends', userId, holdingId],
-        queryFn: () => getHoldingValuations({ holdingId }),
+        queryFn: () => getHoldingValuations({ holdingId: holdingId! }),
         enabled: !!userId && !!holdingId,
     });
 
     const HoldingQuery = useQuery({
         queryKey: ['Holding', userId, holdingId],
-        queryFn: () => getHoldingById({ holdingId }),
+        queryFn: () => getHoldingById({ holdingId: holdingId! }),
         enabled: !!userId && !!holdingId,
     });
 
