@@ -1,0 +1,101 @@
+.layout-root {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #fafcff 0%, #f5f7fa 100%);
+}
+
+.layout-sider {
+    background: linear-gradient(180deg, #ffffff 0%, #fafcff 100%) !important;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.03);
+}
+
+.logo-container {
+    height: 72px;
+    margin: 8px;
+    padding-inline: 16px;
+    border-radius: 12px;
+
+    background: linear-gradient(135deg, color-mix(in srgb, var(--primary-color) 12%, transparent) 0%, transparent 75%);
+}
+
+.logo-icon {
+    width: 36px;
+    height: 36px;
+
+    border-radius: 10px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: white;
+
+    flex-shrink: 0;
+
+    background: linear-gradient(135deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 60%, white));
+
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}
+
+.logo-text {
+    overflow: hidden;
+    white-space: nowrap;
+
+    transition:
+        opacity 0.2s ease,
+        max-width 0.25s ease;
+}
+
+.logo-text-expanded {
+    opacity: 1;
+    max-width: 200px;
+}
+
+.logo-text-collapsed {
+    opacity: 0;
+    max-width: 0;
+}
+
+.logo-title {
+    margin: 0 !important;
+}
+
+.logo-subtitle {
+    font-size: 12px;
+}
+
+.sidebar-menu {
+    border-inline-end: 0 !important;
+    padding-inline: 8px;
+    background: transparent !important;
+}
+
+.layout-header {
+    height: 64px;
+
+    padding-inline: 24px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    background: rgba(255, 255, 255, 0.85);
+
+    backdrop-filter: blur(12px);
+
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.layout-content {
+    padding: 24px;
+    background: transparent;
+}
+
+.profile-avatar {
+    cursor: pointer;
+
+    background: linear-gradient(135deg, var(--primary-color), color-mix(in srgb, var(--primary-color) 60%, white)) !important;
+
+    box-shadow: 0 4px 12px color-mix(in srgb, var(--primary-color) 20%, transparent);
+}

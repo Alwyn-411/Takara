@@ -216,7 +216,7 @@ export const TransactionsCreate = () => {
                                         required
                                         rules={[{ required: true, message: 'Select Transaction Time' }]}
                                     >
-                                        <DatePicker showTime use12Hours style={{ width: '100%' }} />
+                                        <DatePicker showTime use12Hours format="DD MMM YYYY hh:mm A" style={{ width: '100%' }} />
                                     </Form.Item>
                                 </Col>
                             </Row>

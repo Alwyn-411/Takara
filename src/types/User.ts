@@ -9,3 +9,8 @@ export interface User extends Base, Timestamp {
 
     password: string;
 }
+
+export interface UserPref extends Base, Timestamp {
+    currency: string;
+    theme: string;
+}

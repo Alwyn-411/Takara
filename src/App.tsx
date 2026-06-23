@@ -8,6 +8,8 @@ const appTheme: ThemeConfig = {
 
     token: {
         colorPrimary: '#1677ff',
+        colorSuccess: '#73d13d',
+        colorWarning: '#fa541c',
 
         borderRadius: 10,
 

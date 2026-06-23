@@ -2,7 +2,8 @@ import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import { Alert, Button, Card, Col, Flex, Form, Image, Input, Row, Space, Typography, type FormProps } from 'antd';
 import Link from 'antd/es/typography/Link';
-import { createUser, type CreateUserRequest, type CreateUserResponse } from '../../../api/user';
+import { createUser, createUserPref, type CreateUserRequest, type CreateUserResponse } from '../../../api/user';
+import { userPrefInitialState } from '../../../store/Preferences';
 
 const { Title, Text } = Typography;
 
@@ -16,8 +17,18 @@ type FormFields = {
 };
 
 export const Register = () => {
-    const { mutate, isPending, isError, isSuccess } = useMutation<CreateUserResponse, Error, CreateUserRequest>({
+    const createUserPrefApi = useMutation({
+        mutationFn: createUserPref,
+        onSuccess: () => {
+            console.log('User & Pref - Creation Successfull');
+        },
+    });
+
+    const createUserApi = useMutation<CreateUserResponse, Error, CreateUserRequest>({
         mutationFn: createUser,
+        onSuccess: (res) => {
+            createUserPrefApi.mutate({ userId: res.id, ...userPrefInitialState });
+        },
     });
 
     const onFinish: FormProps<FormFields>['onFinish'] = (values) => {
@@ -29,7 +40,7 @@ export const Register = () => {
             password: values.password,
         };
 
-        mutate(userData);
+        createUserApi.mutate(userData);
     };
 
     return (
@@ -57,9 +68,9 @@ export const Register = () => {
                                     </Text>
                                 </Space>
 
-                                {isError && <Alert description="User name already exists" type="error" showIcon />}
+                                {createUserApi.isError && <Alert description="User name already exists" type="error" showIcon />}
 
-                                {isSuccess && (
+                                {createUserApi.isSuccess && (
                                     <Alert
                                         title="User Created Successfully"
                                         description={
@@ -130,7 +141,7 @@ export const Register = () => {
                                     </Form.Item>
 
                                     <Row justify="center" style={{ paddingBottom: 12 }}>
-                                        <Button type="primary" htmlType="submit" size="large" loading={isPending}>
+                                        <Button type="primary" htmlType="submit" size="large" loading={createUserApi.isPending}>
                                             Sign Up
                                         </Button>
                                     </Row>

@@ -1,0 +1,21 @@
+.asset-card {
+    background: linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--ant-color-success) 12%, white) 0%,
+        color-mix(in srgb, var(--ant-color-success) 5%, white) 55%,
+        white 100%
+    );
+
+    border: 1px solid color-mix(in srgb, var(--ant-color-success) 18%, white);
+}
+
+.liability-card {
+    background: linear-gradient(
+        135deg,
+        white 0%,
+        color-mix(in srgb, var(--ant-color-warning) 5%, white) 55%,
+        color-mix(in srgb, var(--ant-color-warning) 12%, white) 100%
+    );
+
+    border: 1px solid color-mix(in srgb, var(--ant-color-warning) 18%, white);
+}

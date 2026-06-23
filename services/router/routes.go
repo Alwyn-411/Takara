@@ -7,6 +7,7 @@ import (
 	"strings"
 	"takara/services/forex"
 	"takara/services/handlers"
+	"takara/services/handlers/holdings"
 	"takara/services/handlers/transactions"
 	"takara/services/middleware"
 
@@ -49,26 +50,36 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 	tokenSvc := middleware.NewTokenService(Env("TOKEN_SECRET", ""))
 	authHandler := handlers.NewAuthHandler(db, tokenSvc)
 	userHandler := handlers.NewUserHandler(db)
+	userPrefHandler := handlers.NewUserPrefHandler(db)
 	tagsHandler := handlers.NewTagsHandler(db)
 	categoryHandler := handlers.NewCategoryHandler(db)
 	merchantHandler := handlers.NewMerchantHandler(db)
 	accountHandler := handlers.NewAccountHandler(db)
 	transactionsHandler := transactions.NewTransactionsHandler(db, forexSvc)
+	holdingsHandler := holdings.NewHoldingsHandler(db)
 
 	engine.GET("/ping", func(ctx *gin.Context) {
 		ctx.JSON(http.StatusAccepted, gin.H{"message": "pong"})
 	})
-	engine.POST("/v1/auth", authHandler.Login)
-	engine.POST("/v1/user/", userHandler.CreateUser)
 
 	api := engine.Group("/v1")
+
+	api.POST("/auth", authHandler.Login)
+	api.POST("/user", userHandler.CreateUser)
+	api.POST("/user/pref", userPrefHandler.CreatePref)
+	api.GET("/user/avatar/:id", userHandler.GetAvatar)
+
 	api.Use(tokenSvc.RequireAuth())
 	{
 		api.GET("/user/:id", userHandler.GetUserById)
-		api.PUT("/user/:id", userHandler.UpdateUserById)
-		api.DELETE("/user/:id", userHandler.DeleteUserById)
+		api.PUT("/user", userHandler.UpdateUserById)
+		api.DELETE("/user", userHandler.DeleteUserById)
+		api.PUT("/user/avatar", userHandler.UpdateAvatar)
 
-		api.POST("/account/", accountHandler.CreateAccount)
+		api.GET("/user/pref", userPrefHandler.GetPref)
+		api.PUT("/user/pref", userPrefHandler.UpdateUserPref)
+
+		api.POST("/account", accountHandler.CreateAccount)
 		api.GET("/account/:accountId", accountHandler.GetAccountById)
 		api.PUT("/account/:accountId", accountHandler.UpdateAccountById)
 		api.DELETE("/account/:accountId", accountHandler.DeleteAccountById)
@@ -78,11 +89,20 @@ func RegisterRoutes(engine *gin.Engine, db *sqlx.DB) {
 		api.GET("/tag/list", tagsHandler.ListTags)
 		api.GET("/merchants/list", merchantHandler.ListMerchants)
 
-		api.POST("/transaction/", transactionsHandler.CreateTransaction)
+		api.POST("/transaction", transactionsHandler.CreateTransaction)
 		api.GET("/transaction/:transactionId", transactionsHandler.GetTransactionById)
 		api.PUT("/transaction/:transactionId", transactionsHandler.UpdateTransaction)
 		api.DELETE("/transaction/:transactionId", transactionsHandler.DeleteTransaction)
 		api.GET("/transaction/account/:accountId", transactionsHandler.GetTransactionsByAccountId)
+
+		api.POST("/holdings", holdingsHandler.CreateHolding)
+		api.GET("/holdings", holdingsHandler.ListHoldings)
+		api.GET("/holdings/:id", holdingsHandler.GetHoldingById)
+		api.PUT("/holdings/:id", holdingsHandler.UpdateHoldingById)
+		api.DELETE("/holdings/:id", holdingsHandler.DeleteHoldingById)
+		api.POST("/holdings/:id/valuations", holdingsHandler.CreateValuation)
+		api.GET("/holdings/:id/valuations", holdingsHandler.ListValuations)
+		api.DELETE("/valuations/:id", holdingsHandler.DeleteValuation)
 	}
 
 	StaticAssetsRoutes(engine)

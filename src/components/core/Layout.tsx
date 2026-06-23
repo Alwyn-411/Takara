@@ -1,50 +1,70 @@
-import { AccountBookOutlined, BankOutlined, CaretLeftOutlined, CaretRightOutlined, HomeOutlined, UserOutlined } from '@ant-design/icons';
+import {
+    AccountBookOutlined,
+    BankOutlined,
+    CaretLeftOutlined,
+    CaretRightOutlined,
+    HomeOutlined,
+    ProfileOutlined,
+    UserOutlined,
+} from '@ant-design/icons';
 
 import { Avatar, Button, Dropdown, Flex, Layout, Menu, Typography, theme, type MenuProps } from 'antd';
+
 import type { ItemType, MenuItemType } from 'antd/es/menu/interface';
 import { useState } from 'react';
 import { FaArrowTrendUp } from 'react-icons/fa6';
-import { Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+
 import { useUserStore } from '../../store/User';
+
+import './Layout.css';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
 export const ContentLayout = () => {
     const userId = useUserStore((state) => state.userId);
+
     const navigate = useNavigate();
+    const location = useLocation();
+
+    const [collapsed, setCollapsed] = useState(false);
+
     const {
-        token: { colorBorderSecondary, colorPrimary },
+        token: { colorPrimary, colorBorderSecondary },
     } = theme.useToken();
 
     if (!userId) {
         return <Navigate to="/" replace />;
     }
-    const [collapsed, setCollapsed] = useState(false);
+
     const SidebarItems: ItemType<MenuItemType>[] = [
         {
-            key: '1',
+            key: '/home',
             icon: <HomeOutlined />,
             label: 'Home',
-            onClick: () => {
-                navigate('/home');
-            },
+            onClick: () => navigate('/home'),
         },
         {
-            key: '2',
+            key: '/accounts',
             icon: <AccountBookOutlined />,
             label: 'Accounts',
-            onClick: () => {
-                navigate('/accounts');
-            },
+            onClick: () => navigate('/accounts'),
         },
         {
-            key: '3',
+            key: '/holdings',
             icon: <BankOutlined />,
             label: 'Holdings',
-            onClick: () => {
-                navigate('/holdings');
-            },
+            onClick: () => navigate('/holdings'),
+        },
+        {
+            type: 'divider',
+        },
+        {
+            key: '/Profile',
+            icon: <ProfileOutlined />,
+            label: 'Profile',
+            onClick: () => navigate('/profile'),
         },
     ];
 
@@ -60,12 +80,7 @@ export const ContentLayout = () => {
         {
             key: '2',
             label: 'Profile',
-            extra: '⌘P',
-        },
-        {
-            key: '3',
-            label: 'Settings',
-            extra: '⌘S',
+            onClick: () => navigate('/profile'),
         },
         {
             type: 'divider',
@@ -74,93 +89,80 @@ export const ContentLayout = () => {
             key: '4',
             label: 'Logout',
             danger: true,
-            extra: '⌘L',
         },
     ];
 
     const ProfileOnClick: MenuProps['onClick'] = (e) => {
         switch (e.key) {
-            case '2':
-                console.log('clicked Profile');
-                break;
-            case '3':
-                console.log('clicked settings');
-                break;
-
             case '4':
-                console.log('clicked Logout');
                 useUserStore.getState().clearUser();
                 navigate('/');
                 break;
-
-            default:
-                console.log('Unknown value');
         }
     };
 
     return (
-        <Layout style={{ minHeight: '100vh' }}>
+        <Layout
+            className="layout-root"
+            style={
+                {
+                    '--primary-color': colorPrimary,
+                    '--border-color': colorBorderSecondary,
+                } as React.CSSProperties
+            }
+        >
             <Sider
                 trigger={null}
                 collapsible
                 collapsed={collapsed}
                 width={240}
                 theme="light"
+                className="layout-sider"
                 style={{
                     borderRight: `1px solid ${colorBorderSecondary}`,
                 }}
             >
-                <Flex
-                    align="center"
-                    gap={12}
-                    style={{
-                        height: 64,
-                        paddingInline: 20,
-                    }}
-                >
-                    <FaArrowTrendUp size={20} color={colorPrimary} />
-                    {!collapsed && (
-                        <Title
-                            level={4}
-                            style={{
-                                margin: 0,
-                            }}
-                        >
+                <Flex align="center" gap={12} className="logo-container">
+                    <div className="logo-icon">
+                        <FaArrowTrendUp size={16} />
+                    </div>
+
+                    <Flex vertical gap={0} className={`logo-text ${collapsed ? 'logo-text-collapsed' : 'logo-text-expanded'}`}>
+                        <Title level={4} className="logo-title">
                             Takara
                         </Title>
-                    )}
+                    </Flex>
                 </Flex>
 
-                <Menu
-                    mode="inline"
-                    items={SidebarItems}
-                    style={{
-                        borderInlineEnd: 0,
-                        paddingInline: 8,
-                    }}
-                />
+                <Menu mode="inline" selectedKeys={[location.pathname]} items={SidebarItems} className="sidebar-menu" />
             </Sider>
 
             <Layout>
                 <Header
+                    className="layout-header"
                     style={{
-                        display: 'flex',
-                        padding: '16px',
-                        justifyContent: 'space-between',
+                        borderBottom: `1px solid ${colorBorderSecondary}`,
                     }}
                 >
-                    <Button type="text" icon={collapsed ? <CaretRightOutlined /> : <CaretLeftOutlined />} onClick={() => setCollapsed(!collapsed)} />
+                    <Button
+                        type="default"
+                        shape="circle"
+                        icon={collapsed ? <CaretRightOutlined /> : <CaretLeftOutlined />}
+                        onClick={() => setCollapsed(!collapsed)}
+                    />
 
-                    <Dropdown menu={{ items: ProfileItems, onClick: ProfileOnClick }}>
-                        <Avatar icon={<UserOutlined />} style={{ cursor: 'pointer', backgroundColor: colorPrimary }} />
+                    <Dropdown
+                        placement="bottomRight"
+                        menu={{
+                            items: ProfileItems,
+                            onClick: ProfileOnClick,
+                        }}
+                    >
+                        <Avatar icon={<UserOutlined />} className="profile-avatar" src={`/v1/user/avatar/${useUserStore.getState().userId}`} />
                     </Dropdown>
                 </Header>
 
-                <Content
-                    style={{
-                        padding: 24,
-                    }}
-                >
+                <Content className="layout-content">
                     <Outlet />
                 </Content>
             </Layout>
