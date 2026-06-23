@@ -19,11 +19,11 @@ import {
     type FormProps,
 } from 'antd';
 import { useState } from 'react';
-import { updateUser, updateUserPref, uploadUserAvatar } from '../../../api/user';
-import { useUserPrefStore } from '../../../store/Preferences';
-import { useUserStore } from '../../../store/User';
-import { currencies } from '../../../types/Accounts';
-import type { User, UserPref } from '../../../types/User';
+import { updateUser, updateUserPref, uploadUserAvatar } from '../../api/user';
+import { useUserPrefStore } from '../../store/Preferences';
+import { useUserStore } from '../../store/User';
+import { currencies } from '../../types/Accounts';
+import type { User, UserPref } from '../../types/User';
 
 const { Title, Text } = Typography;
 

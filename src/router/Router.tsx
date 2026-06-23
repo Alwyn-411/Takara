@@ -11,8 +11,8 @@ import { ValuationCreate } from '../components/pages/Holdings/CreateValuations';
 import { Holdings as HoldingsOverview } from '../components/pages/Holdings/Overview';
 import { HoldingTrends } from '../components/pages/Holdings/Trends';
 import { Home } from '../components/pages/Home';
+import { Profile } from '../components/pages/Profile';
 import { TransactionsCreate } from '../components/pages/Transactions/Create';
-import { Profile } from '../components/pages/User/Profile';
 
 export const Router = () => {
     return (

@@ -9,7 +9,6 @@ import { deleteHolding, getHoldings } from '../../../api/holdings';
 import { useUserStore } from '../../../store/User';
 import { currencies } from '../../../types/Accounts';
 import { assetKindOptions, HoldingType, liabilityKindOptions, type HoldingDataType, type HoldingWithValue } from '../../../types/Holdings';
-import { TrendStatistics } from '../../core/TrendStats/TrendStats';
 
 import type { SegmentedOptions } from 'antd/es/segmented';
 import { useUserPrefStore } from '../../../store/Preferences';
@@ -167,7 +166,7 @@ export const Holdings = () => {
                     </Space>
                 </Row>
 
-                <Divider />
+                {/* <Divider />
                 <Row gutter={16} justify="center" align="middle">
                     <Col span={6}>
                         <TrendStatistics title="Net Worth" value={1322} prefix={userPreferedCurrency?.symbol} delta={4.2} />
@@ -187,7 +186,7 @@ export const Holdings = () => {
                     <Col span={6}>
                         <TrendStatistics title="Debt-Asset Ratio" value={8.4} suffix="%" precision={1} delta={-1.2} higherIsBetter={false} />
                     </Col>
-                </Row>
+                </Row> */}
 
                 <Divider />
                 <Row gutter={16}>
